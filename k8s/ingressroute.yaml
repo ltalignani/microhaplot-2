@@ -1,0 +1,29 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-prefix-microhaplot2
+  namespace: tools
+spec:
+  stripPrefix:
+    prefixes:
+      - /microhaplot2
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: microhaplot2
+  namespace: tools
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`skat3.ird.fr`) && PathPrefix(`/microhaplot2`)
+      kind: Rule
+      services:
+        - name: microhaplot2
+          port: 80
+      middlewares:
+        - name: strip-prefix-microhaplot2
+  tls:
+    certResolver: letsencrypt

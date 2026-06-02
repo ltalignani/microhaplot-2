@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microhaplot2
+  namespace: tools
+  labels:
+    app: microhaplot2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: microhaplot2
+  template:
+    metadata:
+      labels:
+        app: microhaplot2
+    spec:
+      containers:
+        - name: microhaplot2
+          image: ghcr.io/ltalignani/microhaplot-2:latest
+          ports:
+            - containerPort: 3838
+          env:
+            - name: MICROHAPLOT_DATA_DIR
+              value: /data/lovelace
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+          volumeMounts:
+            - name: data
+              mountPath: /data/lovelace
+              readOnly: true
+      volumes:
+        - name: data
+          hostPath:
+            path: /data/lovelace
+            type: DirectoryOrCreate
