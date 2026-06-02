@@ -1,10 +1,14 @@
 library(shiny)
 library(bslib)
+library(DT)
 
 # summaryModule — exploratory visualisations by locus, individual, and group.
 #
-# Input: haplo_data reactive — data.frame with columns:
-#   group, id, locus, haplo, depth, allele.balance, rank
+# Inputs:
+#   haplo_data    reactive — raw data (group, id, locus, haplo, depth,
+#                            allele.balance, rank)
+#   filtered_data reactive — filtered data from filterAnnotationModule
+#                            (same schema); used for HWE and entropy tabs.
 #
 # Parameters that control the display (pagination, group filter) are managed
 # internally; the module emits no return value.
@@ -29,11 +33,25 @@ summaryUI <- function(id) {
           shiny::numericInput(ns("locus_page"), "Page", value = 1, min = 1)
         ),
         bslib::layout_columns(
-          col_widths = c(3, 3, 3, 3),
+          col_widths = c(2, 2, 2, 3, 3),
           shiny::plotOutput(ns("haplo_density")),
           shiny::plotOutput(ns("uniq_haplo")),
           shiny::plotOutput(ns("frac_callable")),
-          shiny::plotOutput(ns("read_depth"))
+          shiny::plotOutput(ns("read_depth")),
+          shiny::plotOutput(ns("entropy_plot"))
+        )
+      )
+    ),
+    bslib::nav_panel(
+      "HWE / Diversité",
+      bslib::layout_sidebar(
+        sidebar = bslib::sidebar(
+          shiny::selectInput(ns("hwe_locus_select"), "Locus",
+                             choices = NULL, selected = NULL)
+        ),
+        bslib::card(
+          bslib::card_header("Fréquences diplotypiques observées vs attendues (HWE)"),
+          DT::DTOutput(ns("hwe_table"))
         )
       )
     ),
@@ -65,9 +83,18 @@ summaryUI <- function(id) {
   )
 }
 
-summaryServer <- function(id, haplo_data) {
+summaryServer <- function(id, haplo_data, filtered_data = NULL) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
+
+    # Use filtered_data for HWE/entropy if provided; else fall back to haplo_data
+    hwe_source <- shiny::reactive({
+      if (!is.null(filtered_data) && !is.null(filtered_data())) {
+        filtered_data()
+      } else {
+        haplo_data()
+      }
+    })
 
     # ---- derived labels -------------------------------------------------------
 
@@ -223,6 +250,42 @@ summaryServer <- function(id, haplo_data) {
       n   <- dplyr::n_distinct(haplo_filtered()$locus)
       tbl <- frac_callable_by_indiv(haplo_filtered(), n_loci = n)
       plot_frac_callable_loci_by_indiv(tbl, indiv_subset = indiv_page())
+    })
+
+    # ---- entropy (5th by-locus plot) -----------------------------------------
+
+    output$entropy_plot <- shiny::renderPlot({
+      req(hwe_source(), loci_page())
+      tbl <- shannon_entropy_per_locus(hwe_source())
+      plot_entropy_by_locus(tbl, loci_subset = loci_page())
+    })
+
+    # ---- HWE tab -------------------------------------------------------------
+
+    shiny::observe({
+      req(hwe_source())
+      loci <- sort(unique(hwe_source()$locus))
+      shiny::updateSelectInput(session, "hwe_locus_select",
+                               choices  = c("ALL", loci),
+                               selected = loci[1])
+    })
+
+    hwe_data_for_locus <- shiny::reactive({
+      req(hwe_source())
+      d <- hwe_source()
+      if (!is.null(input$hwe_locus_select) && input$hwe_locus_select != "ALL")
+        d <- d[d$locus == input$hwe_locus_select, ]
+      haplo_freq_tbl(d)
+    })
+
+    output$hwe_table <- DT::renderDT({
+      req(hwe_data_for_locus())
+      tbl <- hwe_data_for_locus()
+      tbl$obs.freq      <- round(tbl$obs.freq, 4)
+      tbl$expected.freq <- round(tbl$expected.freq, 4)
+      DT::datatable(tbl,
+                    rownames = FALSE,
+                    options  = list(pageLength = 20, scrollX = TRUE))
     })
   })
 }

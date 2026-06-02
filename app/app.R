@@ -7,6 +7,7 @@ source(here("app/R/extraction.R"))
 source(here("app/R/input_validation.R"))
 source(here("app/R/dataInputModule.R"))
 source(here("app/R/summary_stats.R"))
+source(here("app/R/hwe_entropy.R"))
 source(here("app/R/summaryModule.R"))
 source(here("app/R/filter_annotation.R"))
 source(here("app/R/filterAnnotationModule.R"))
@@ -42,7 +43,8 @@ ui <- page_navbar(
 server <- function(input, output, session) {
   result      <- dataInputServer("data_input")
   filter_res  <- filterAnnotationServer("filter_ann", result$haplo_data)
-  summaryServer("summary", result$haplo_data)
+  summaryServer("summary", result$haplo_data,
+                filtered_data = filter_res$filtered_data)
   outputServer("output_dl",
                haplo_data    = result$haplo_data,
                filtered_data = filter_res$filtered_data,
