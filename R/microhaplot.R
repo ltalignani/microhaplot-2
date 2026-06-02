@@ -1,4 +1,5 @@
-
+# OUT-OF-SCOPE for microhaplot2: legacy R package globals retained for reference
+# only. Not sourced by app/.
 
 # quiets concerns of R CMD check re: the . and other column names
 # that appear in dplyr chains

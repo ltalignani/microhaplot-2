@@ -1,4 +1,6 @@
-
+# OUT-OF-SCOPE for microhaplot2: Gibbs sampler MCMC code retained here for
+# reference only. The inferential analysis tab in the new app is a placeholder
+# (see app/R/inferentialModule.R). No functions below are sourced by app/.
 
 # Testing set:
 # haplo.sum<- readRDS("inst/shiny/haPLOType/satrovirens_7_19_16.rds")  %>% mutate(id = as.character(id)) %>% tbl_df()
