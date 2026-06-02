@@ -108,6 +108,11 @@ dataInputServer <- function(id, data_dir = NULL) {
           "Veuillez corriger les erreurs ci-dessus avant de lancer l'extraction.")
     })
 
-    result
+    run_label <- reactive({
+      req(input$vcf_file)
+      tools::file_path_sans_ext(basename(input$vcf_file$name))
+    })
+
+    list(haplo_data = result, run_label = run_label)
   })
 }
