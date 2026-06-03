@@ -1,0 +1,31 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-prefix-microhaplot2
+  namespace: tools
+spec:
+  stripPrefix:
+    prefixes:
+      - /microhaplot2
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: microhaplot2
+  namespace: tools
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: tools-strip-prefix-microhaplot2@kubernetescrd
+spec:
+  rules:
+    - host: skat3.ird.fr
+      http:
+        paths:
+          - path: /microhaplot2
+            pathType: Prefix
+            backend:
+              service:
+                name: microhaplot2
+                port:
+                  number: 80

@@ -23,6 +23,12 @@ spec:
           env:
             - name: MICROHAPLOT_DATA_DIR
               value: /data/lovelace
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3838
+            initialDelaySeconds: 15
+            periodSeconds: 10
           resources:
             requests:
               cpu: "1"
