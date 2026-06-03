@@ -18,6 +18,7 @@ spec:
       containers:
         - name: microhaplot2
           image: ghcr.io/ltalignani/microhaplot-2:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3838
           env:

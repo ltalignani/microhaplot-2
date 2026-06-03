@@ -1,8 +1,11 @@
-name: Build and push Docker image
+name: CI — Build, push and update manifest
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'app/**'
+      - 'Dockerfile'
 
 env:
   REGISTRY: ghcr.io
@@ -12,33 +15,45 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      packages: write
+      contents: write   # needed to commit the updated deployment.yaml
+      packages: write   # needed to push to GHCR
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha,prefix=sha-
-            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Update the image tag in deployment.yaml so ArgoCD detects a manifest
+      # change and triggers a rollout — without this, ArgoCD never re-deploys
+      # even when a new :latest image is pushed.
+      - name: Update image tag in k8s/deployment.yaml
+        run: |
+          sed -i \
+            "s|image: .*microhaplot-2:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|" \
+            k8s/deployment.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/deployment.yaml
+          git diff --staged --quiet || \
+            git commit -m "ci: update image tag to ${{ github.sha }}" && \
+            git push
