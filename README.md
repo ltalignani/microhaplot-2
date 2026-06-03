@@ -123,6 +123,45 @@ Dockerfile                  # rocker/shiny:4.4.1 + Rsamtools + VariantAnnotation
 
 ---
 
+## Usage local (sans serveur)
+
+microhaplot2 peut être lancé sur votre propre machine, sans passer par
+`skat3.ird.fr`. Deux méthodes selon votre profil.
+
+### Méthode A — Installation via devtools (utilisateur)
+
+```r
+# Prérequis Bioconductor
+if (!require("BiocManager")) install.packages("BiocManager")
+BiocManager::install(c("Rsamtools", "VariantAnnotation", "BiocParallel"))
+
+# Installation du package
+devtools::install_github("ltalignani/microhaplot-2")
+
+# Lancement
+library(microhaplot)
+Sys.setenv(MICROHAPLOT_DATA_DIR = "/chemin/vers/mes/bam")
+runShinyHaplot()
+```
+
+L'app s'ouvre dans votre navigateur. Pointez `MICROHAPLOT_DATA_DIR` vers le
+répertoire contenant vos fichiers `.bam` et `.bai`.
+
+### Méthode B — Clone du repo (développeur)
+
+```r
+# Depuis le répertoire racine du repo cloné
+Sys.setenv(MICROHAPLOT_DATA_DIR = "/chemin/vers/mes/bam")
+shiny::runApp("app/")
+```
+
+> **Note** : pour que `runShinyHaplot()` fonctionne avec `devtools::install_github()`,
+> le répertoire `app/` doit être présent dans `inst/app/` du package installé.
+> Si ce n'est pas encore le cas dans la version que vous installez, utilisez la
+> Méthode B (clone + `shiny::runApp("app/")`).
+
+---
+
 ## Development
 
 ### Prerequisites

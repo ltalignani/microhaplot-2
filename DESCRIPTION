@@ -1,32 +1,38 @@
 Package: microhaplot
 Type: Package
 Title: Microhaplotype Constructor and Visualizer
-Version: 1.0.2
-Authors@R: person("Thomas", "Ng", email = "tngthomasng@gmail.com", role = c("aut", "cre"))
-Description: A downstream bioinformatics tool to construct and assist 
-    curation of microhaplotypes from short read sequences.
+Version: 2.0.0
+Authors@R: c(
+    person("Thomas", "Ng", email = "tngthomasng@gmail.com", role = "aut"),
+    person("Loïc", "Talignani", email = "loic.talignani@ird.fr", role = c("aut", "cre")))
+Description: A server-side Shiny application to construct and curate
+    microhaplotypes from indexed BAM alignments. Replaces the original
+    Perl-based pipeline with a pure-R extraction engine (Rsamtools).
+    Designed for deployment on the SKAT3 IRD infrastructure but can also
+    be run locally.
 Depends:
-    R (>= 3.5.0)
+    R (>= 4.4.0)
 Encoding: UTF-8
 License: GPL-3
-LazyData: TRUE
+LazyData: FALSE
 Imports:
-    DT (>= 0.1),
-    dplyr (>= 0.4.3),
-    ggplot2 (>= 2.1.0),
-    grid (>= 3.1.2),
-    gtools (>= 3.5.0),
-    magrittr (>= 1.5),
-    scales (>= 0.4.0),
-    shiny (>= 0.13.2),
-    shinyBS (>= 0.61),
-    tidyr (>= 0.4.1),
-    shinyWidgets (>= 0.4.3),
-    ggiraph (>= 0.6.0)
-URL: https://github.com/ngthomas/microhaplot
-BugReports: https://github.com/ngthomas/microhaplot/issues
-RoxygenNote: 7.1.1
-Suggests: 
+    shiny (>= 1.8.0),
+    bslib (>= 0.7.0),
+    shinyWidgets (>= 0.8.0),
+    DT (>= 0.33),
+    dplyr (>= 1.1.0),
+    ggplot2 (>= 3.5.0),
+    tidyr (>= 1.3.0),
+    ggiraph (>= 0.8.0),
+    Rsamtools,
+    VariantAnnotation,
+    BiocParallel
+URL: https://github.com/ltalignani/microhaplot-2
+BugReports: https://github.com/ltalignani/microhaplot-2/issues
+RoxygenNote: 7.3.2
+biocViews: Sequencing, SNP, Visualization
+Suggests:
+    testthat (>= 3.0.0),
     knitr,
     rmarkdown
 VignetteBuilder: knitr

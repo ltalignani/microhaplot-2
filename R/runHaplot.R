@@ -8,10 +8,26 @@
 #' if(interactive()){
 #' runShinyHaplot()
 #' }
-runShinyHaplot <- function(path = system.file("shiny", "microhaplot", package = "microhaplot")) {
-  if (path == "" || !file.exists(path)) {
-    #stop("Could not find Shiny directory. Try re-installing `mypackage`.", call. = FALSE)
-    stop("Could not find Shiny directory", call. = FALSE)
+runShinyHaplot <- function(path = NULL) {
+  if (is.null(path)) {
+    # installed package: app lives in inst/app/
+    path <- system.file("app", package = "microhaplot")
+    # development clone: app lives at repo root app/
+    if (path == "") {
+      path <- file.path(
+        getwd(),
+        if (basename(getwd()) == "microhaplot") "app" else "microhaplot/app"
+      )
+    }
+  }
+  if (!file.exists(path)) {
+    stop(
+      "Could not find the microhaplot2 app directory.\n",
+      "  - If installed via devtools: try re-installing with ",
+      "`devtools::install_github('ltalignani/microhaplot-2')`\n",
+      "  - If cloning the repo: run `shiny::runApp('app/')` from the repo root",
+      call. = FALSE
+    )
   }
   shiny::runApp(path, display.mode = "normal")
 }
