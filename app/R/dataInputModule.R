@@ -23,7 +23,11 @@ dataInputUI <- function(id) {
             fileInput(ns("vcf_file"), "Fichier VCF des SNP cibles",
                       accept = c(".vcf", ".vcf.gz", "application/gzip",
                                  "application/x-gzip", "text/plain"),
-                      buttonLabel = "Parcourir…")
+                      buttonLabel = "Parcourir…"),
+            shiny::helpText("Pour les fichiers volumineux (.vcf.gz > 1 Go), la barre ",
+                            "atteint 100 % dès la fin du transfert réseau. ",
+                            "Le message « Upload complete » confirme que le fichier ",
+                            "est prêt — attendez-le avant de lancer l'extraction.")
           )
         ),
         uiOutput(ns("validation_errors")),
