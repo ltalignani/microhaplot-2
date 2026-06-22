@@ -78,7 +78,7 @@ filterAnnotationServer <- function(id, haplo_data, session_dir = NULL) {
       shiny::req(haplo_data())
       loci <- sort(unique(haplo_data()$locus))
       shiny::updateSelectInput(session, "locus", choices = loci,
-                               selected = loci[[1L]])
+                               selected = loci[1L])
     })
 
     # When locus changes, load its saved params (if any) and fill inputs
