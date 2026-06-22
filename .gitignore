@@ -15,4 +15,7 @@ docs
 .claude
 .opencode
 .understand-anything
-
+ralph/
+logs/
+create-issues.sh
+PRD-microhaplot2.md
