@@ -128,37 +128,31 @@ Dockerfile                  # rocker/shiny:4.4.1 + Rsamtools + VariantAnnotation
 microhaplot2 peut être lancé sur votre propre machine, sans passer par
 `skat3.ird.fr`. Deux méthodes selon votre profil.
 
-### Méthode A — Installation via devtools (utilisateur)
+### Méthode A — Clone du repo (recommandé)
 
-```r
-# Prérequis Bioconductor
-if (!require("BiocManager")) install.packages("BiocManager")
-BiocManager::install(c("Rsamtools", "VariantAnnotation", "BiocParallel"))
-
-# Installation du package
-devtools::install_github("ltalignani/microhaplot-2")
-
-# Lancement
-library(microhaplot)
-Sys.setenv(MICROHAPLOT_DATA_DIR = "/chemin/vers/mes/bam")
-runShinyHaplot()
+```bash
+git clone https://github.com/ltalignani/microhaplot-2.git
+cd microhaplot-2
 ```
 
-L'app s'ouvre dans votre navigateur. Pointez `MICROHAPLOT_DATA_DIR` vers le
-répertoire contenant vos fichiers `.bam` et `.bai`.
-
-### Méthode B — Clone du repo (développeur)
-
 ```r
-# Depuis le répertoire racine du repo cloné
+# Installer les dépendances (une seule fois)
+source("install_deps.R")
+
+# Lancer l'app
 Sys.setenv(MICROHAPLOT_DATA_DIR = "/chemin/vers/mes/bam")
 shiny::runApp("app/")
 ```
 
-> **Note** : pour que `runShinyHaplot()` fonctionne avec `devtools::install_github()`,
-> le répertoire `app/` doit être présent dans `inst/app/` du package installé.
-> Si ce n'est pas encore le cas dans la version que vous installez, utilisez la
-> Méthode B (clone + `shiny::runApp("app/")`).
+### Méthode B — Installation via devtools
+
+```r
+# Installer les dépendances (une seule fois)
+source("install_deps.R")
+
+# Installer le package
+devtools::install_github("ltalignani/microhaplot-2")
+```
 
 ---
 
@@ -167,15 +161,26 @@ shiny::runApp("app/")
 ### Prerequisites
 
 - R ≥ 4.4
-- Bioconductor packages: `Rsamtools`, `VariantAnnotation`, `BiocParallel`
-- CRAN packages: `bslib`, `shinyWidgets`, `DT`, `dplyr`, `ggplot2`, `tidyr`, `ggiraph`
+
+Install all dependencies at once using the provided script:
 
 ```r
-if (!require("BiocManager")) install.packages("BiocManager")
-BiocManager::install(c("Rsamtools", "VariantAnnotation", "BiocParallel"))
-install.packages(c("bslib", "shinyWidgets", "DT", "dplyr",
-                   "ggplot2", "tidyr", "ggiraph"))
+source("install_deps.R")
 ```
+
+Or run it from a terminal:
+
+```bash
+Rscript install_deps.R
+```
+
+This installs both CRAN packages (`shiny`, `bslib`, `shinyWidgets`, `DT`,
+`dplyr`, `ggplot2`, `tidyr`, `ggiraph`, `here`) and Bioconductor packages
+(`Rsamtools`, `VariantAnnotation`, `BiocParallel`).
+
+> **Note**: install packages individually (not as part of the tidyverse
+> meta-package) to avoid version conflicts with shared dependencies such
+> as `rlang`.
 
 ### Run locally
 
