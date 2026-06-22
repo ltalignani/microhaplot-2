@@ -21,7 +21,9 @@ dataInputUI <- function(id) {
           card(
             card_header("Variants (VCF)"),
             fileInput(ns("vcf_file"), "Fichier VCF des SNP cibles",
-                      accept = c(".vcf", ".vcf.gz"), buttonLabel = "Parcourir…")
+                      accept = c(".vcf", ".vcf.gz", "application/gzip",
+                                 "application/x-gzip", "text/plain"),
+                      buttonLabel = "Parcourir…")
           )
         ),
         uiOutput(ns("validation_errors")),
