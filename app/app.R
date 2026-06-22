@@ -3,6 +3,8 @@ library(bslib)
 library(DT)
 library(here)
 
+options(shiny.maxRequestSize = 20 * 1024^3)  # 20 GB
+
 source(here("app/R/extraction.R"))
 source(here("app/R/input_validation.R"))
 source(here("app/R/dataInputModule.R"))
