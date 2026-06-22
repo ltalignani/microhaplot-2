@@ -2,29 +2,73 @@ library(Rsamtools)
 library(dplyr)
 
 # Parse a VCF file and return a data.frame of SNP positions only.
-# Indels (ref or alt length > 1) are excluded, matching legacy hapture.pl behaviour.
+# Reads in chunks to avoid loading multi-GB files entirely into RAM.
+# Detects gzip by magic bytes — Shiny strips extensions from temp file paths.
 parse_vcf_loci <- function(vcf_path) {
-  # Detect gzip by magic bytes (0x1f 0x8b): Shiny strips the extension from
-  # temp file paths, so we cannot rely on ".gz" in the filename.
   magic <- tryCatch(readBin(vcf_path, what = "raw", n = 2L), error = function(e) raw(0))
   is_gz <- length(magic) >= 2L && magic[1L] == as.raw(0x1f) && magic[2L] == as.raw(0x8b)
   con   <- if (is_gz) gzcon(file(vcf_path, "rb")) else file(vcf_path, "r")
-  lines <- tryCatch(readLines(con), finally = close(con))
-  data_lines <- lines[!startsWith(lines, "#")]
-  if (length(data_lines) == 0L) {
-    return(data.frame(locus = character(), pos = integer(),
+  on.exit(close(con))
+
+  empty <- data.frame(locus = character(), pos = integer(),
                       ref = character(), alt = character(),
-                      stringsAsFactors = FALSE))
+                      stringsAsFactors = FALSE)
+  chunks    <- list()
+  CHUNK     <- 50000L
+
+  repeat {
+    lines <- readLines(con, n = CHUNK, warn = FALSE)
+    if (length(lines) == 0L) break
+
+    data_lines <- lines[!startsWith(lines, "#")]
+    if (length(data_lines) == 0L) next
+
+    mat <- strsplit(data_lines, "\t", fixed = TRUE)
+    mat <- mat[lengths(mat) >= 5L]
+    if (length(mat) == 0L) next
+    mat <- do.call(rbind, mat)
+
+    ref  <- mat[, 4L]
+    alt  <- sub(",.*", "", mat[, 5L])
+    keep <- nchar(ref) == 1L & nchar(alt) == 1L
+    if (!any(keep)) next
+
+    chunks[[length(chunks) + 1L]] <- data.frame(
+      locus = mat[keep, 1L],
+      pos   = as.integer(mat[keep, 2L]),
+      ref   = ref[keep],
+      alt   = alt[keep],
+      stringsAsFactors = FALSE
+    )
   }
-  mat <- do.call(rbind, strsplit(data_lines, "\t"))
-  df <- data.frame(
-    locus = mat[, 1L],
-    pos   = as.integer(mat[, 2L]),
-    ref   = mat[, 4L],
-    alt   = sub(",.*", "", mat[, 5L]),  # take first ALT allele only
+
+  if (length(chunks) == 0L) empty else do.call(rbind, chunks)
+}
+
+# Variant of extract_haplotypes that accepts pre-parsed VCF loci (data.frame)
+# instead of a file path — avoids re-reading the VCF for every BAM.
+extract_haplotypes_from_loci <- function(bam_dir, vcf_loci, metadata) {
+  empty <- data.frame(
+    group = character(), id = character(), locus = character(),
+    haplo = character(), depth = integer(),
+    allele.balance = numeric(), rank = integer(),
     stringsAsFactors = FALSE
   )
-  df[nchar(df$ref) == 1L & nchar(df$alt) == 1L, ]
+  if (is.null(vcf_loci) || nrow(vcf_loci) == 0L) return(empty)
+
+  rows <- lapply(seq_len(nrow(metadata)), function(i) {
+    bam_path <- file.path(bam_dir, metadata$bam_file[i])
+    .extract_one_bam(bam_path, vcf_loci, id = metadata$id[i], group = metadata$group[i])
+  })
+
+  counts <- do.call(rbind, Filter(Negate(is.null), rows))
+  if (is.null(counts) || nrow(counts) == 0L) return(empty)
+
+  result <- add_allele_balance(counts)
+  result <- result[, c("group", "id", "locus", "haplo", "depth", "allele.balance", "rank")]
+  result$depth <- as.integer(result$depth)
+  result$rank  <- as.integer(result$rank)
+  result
 }
 
 # Map a single reference position to the 1-based query position for a read.

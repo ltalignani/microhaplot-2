@@ -95,15 +95,55 @@ dataInputServer <- function(id, data_dir = NULL) {
       )
 
       vcf_path <- input$vcf_file$datapath
+
+      # Parse VCF once — can be slow for large .vcf.gz files
+      vcf_loci <- withProgress(message = "Lecture du VCF…", value = NULL, {
+        tryCatch(
+          parse_vcf_loci(vcf_path),
+          error = function(e) {
+            shiny::showNotification(
+              paste("Erreur lecture VCF :", conditionMessage(e)),
+              type = "error", duration = NULL
+            )
+            NULL
+          }
+        )
+      })
+
+      if (is.null(vcf_loci) || nrow(vcf_loci) == 0L) {
+        shiny::showNotification(
+          "Aucun SNP biallélique trouvé dans le VCF. Vérifiez le format du fichier.",
+          type = "warning", duration = NULL
+        )
+        return(NULL)
+      }
+
       n <- nrow(meta)
       withProgress(message = "Extraction en cours…", value = 0, {
         rows <- lapply(seq_len(n), function(i) {
           incProgress(1 / n, detail = paste("BAM", i, "/", n))
-          extract_haplotypes(resolved_dir, vcf_path, meta[i, , drop = FALSE])
+          tryCatch(
+            extract_haplotypes_from_loci(resolved_dir, vcf_loci, meta[i, , drop = FALSE]),
+            error = function(e) {
+              shiny::showNotification(
+                paste0("Erreur BAM ", meta$bam_file[i], " : ", conditionMessage(e)),
+                type = "error", duration = NULL
+              )
+              NULL
+            }
+          )
         })
       })
 
-      do.call(rbind, rows)
+      result <- do.call(rbind, Filter(Negate(is.null), rows))
+      if (is.null(result) || nrow(result) == 0L) {
+        shiny::showNotification(
+          "Extraction terminée mais aucun haplotype trouvé. Vérifiez les noms de chromosomes (BAM vs VCF).",
+          type = "warning", duration = NULL
+        )
+        return(NULL)
+      }
+      result
     })
 
     output$run_errors <- renderUI({
