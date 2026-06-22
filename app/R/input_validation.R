@@ -45,15 +45,16 @@ resolve_bam_paths <- function(metadata, data_dir = NULL) {
   errors <- character()
 
   for (bam_file in metadata$bam_file) {
-    bam_path <- file.path(data_dir, bam_file)
-    bai_path <- paste0(bam_path, ".bai")
+    bam_path  <- file.path(data_dir, bam_file)
+    bai_path1 <- paste0(bam_path, ".bai")
+    bai_path2 <- sub("\\.bam$", ".bai", bam_path, ignore.case = TRUE)
 
     if (!file.exists(bam_path)) {
       errors <- c(errors, paste0("Fichier BAM introuvable : ", bam_file))
-    } else if (!file.exists(bai_path)) {
+    } else if (!file.exists(bai_path1) && !file.exists(bai_path2)) {
       errors <- c(errors, paste0(
-        "Index BAI manquant : ", paste0(bam_file, ".bai"),
-        " — créez-le avec samtools index ", bam_file
+        "Index BAI manquant pour : ", bam_file,
+        " — créez-le avec : samtools index ", bam_file
       ))
     }
   }

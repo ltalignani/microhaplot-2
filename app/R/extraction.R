@@ -4,7 +4,8 @@ library(dplyr)
 # Parse a VCF file and return a data.frame of SNP positions only.
 # Indels (ref or alt length > 1) are excluded, matching legacy hapture.pl behaviour.
 parse_vcf_loci <- function(vcf_path) {
-  lines <- readLines(vcf_path)
+  con   <- if (grepl("\\.gz$", vcf_path, ignore.case = TRUE)) gzcon(file(vcf_path, "rb")) else file(vcf_path, "r")
+  lines <- tryCatch(readLines(con), finally = close(con))
   data_lines <- lines[!startsWith(lines, "#")]
   if (length(data_lines) == 0L) {
     return(data.frame(locus = character(), pos = integer(),
