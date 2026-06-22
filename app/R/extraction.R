@@ -4,7 +4,11 @@ library(dplyr)
 # Parse a VCF file and return a data.frame of SNP positions only.
 # Indels (ref or alt length > 1) are excluded, matching legacy hapture.pl behaviour.
 parse_vcf_loci <- function(vcf_path) {
-  con   <- if (grepl("\\.gz$", vcf_path, ignore.case = TRUE)) gzcon(file(vcf_path, "rb")) else file(vcf_path, "r")
+  # Detect gzip by magic bytes (0x1f 0x8b): Shiny strips the extension from
+  # temp file paths, so we cannot rely on ".gz" in the filename.
+  magic <- tryCatch(readBin(vcf_path, what = "raw", n = 2L), error = function(e) raw(0))
+  is_gz <- length(magic) >= 2L && magic[1L] == as.raw(0x1f) && magic[2L] == as.raw(0x8b)
+  con   <- if (is_gz) gzcon(file(vcf_path, "rb")) else file(vcf_path, "r")
   lines <- tryCatch(readLines(con), finally = close(con))
   data_lines <- lines[!startsWith(lines, "#")]
   if (length(data_lines) == 0L) {
