@@ -510,7 +510,7 @@ shinyUI(
                                                    step = 0.01))
                      ),
                      column(8,
-                            ggiraph::ggiraphOutput("biplot", height = "450px"),
+                            ggiraph::girafeOutput("biplot", height = "450px"),
                             height="auto",
                             style= "width:'100%'"),
                      column(12,

@@ -2582,7 +2582,7 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
 
   },height=function(){ifelse(input$selectLocus == "ALL",1,150)})
 
-  output$biplot <-renderggiraph({
+  output$biplot <-renderGirafe({
     #output$biplot <-renderPlot({
 
     #renderPlot({
