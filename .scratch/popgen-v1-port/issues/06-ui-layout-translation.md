@@ -1,5 +1,5 @@
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -24,3 +24,29 @@ Decide the concrete v1-idiomatic translation for the new tab:
 
 Use `/prototype` if a visual mockup would help settle this faster than
 description alone.
+
+## Answer
+
+Resolved by direct precedent from `inst/shiny/microhaplot/ui.R`'s existing
+`"Criteria Cutoff"` and `"Genotype Call"` `navbarMenu`s — no prototype
+needed, the conventions there are consistent and unambiguous:
+
+- **Top-level structure**: `navbarMenu("Population Genetics",
+  tabPanel(h5("F-statistics"), ...), tabPanel(h5("Allelic diversity"),
+  ...), tabPanel(h5("PCA / Projection"), ...), tabPanel(h5("Outlier
+  scan"), ...))` — sub-tab titles wrapped in `h5()`, matching every
+  existing `navbarMenu` in the app (e.g. `tabPanel(h5("Global Scope"),
+  ...)` in Criteria Cutoff).
+- **Data-source toggle placement**: no shared/persistent control area —
+  v1 has no sidebar equivalent. A `fluidRow`/`column` control strip
+  (e.g. `radioButtons` for raw/filtered) repeated at the top of *each*
+  of the 4 sub-tabs, matching the "Quality Profiling" sub-tab's existing
+  pattern of inline controls at the top of a `tabPanel`.
+- **Card-equivalent framing**: no visual wrapper (no `wellPanel`, which
+  the codebase barely uses). Section headers are plain `h4()`/`h5()`
+  calls directly inside a `column()`, exactly like `column(12,
+  h4(textOutput("DP1")))` and `column(6, h4("Individual list:"))` in
+  Criteria Cutoff.
+- **Button/download styling**: plain `downloadButton(...)`/
+  `actionButton(...)` with no custom class — matching the "Table" tab's
+  `downloadButton('downloadData', 'Download')`, which has none.
