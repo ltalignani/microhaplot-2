@@ -36,6 +36,7 @@ hand to `/to-spec` — not working code.
 - [VCF via simple fileInput per run](issues/10-vcf-reuse.md) — no VCF library/reuse mechanism in this effort.
 - [Folder picker uses shinyFiles](issues/11-folder-picker-mechanism.md) — purpose-built, cross-platform, stays in-browser; HTML5 `webkitdirectory`, `rstudioapi`, and `tcltk` all ruled out for this audience/setup.
 - [Async execution via future/promises](issues/12-async-execution-architecture.md) — `prepHaplotFiles()` wrapped whole in a `future` (`plan(multisession)`), no changes inside it; main Shiny session stays free to poll for progress. Standard RStudio/Posit pattern for long-running Shiny tasks.
+- [TSV schema: header row + 4 columns](issues/13-tsv-schema-detail.md) — `bam_file, individual_id, group, color` (optional), header required, downloadable template, validation rules for each column.
 
 ## Not yet specified
 
