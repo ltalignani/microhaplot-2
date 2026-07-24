@@ -37,6 +37,7 @@ ready to hand to `/to-spec` — not working code.
 - [All 4 core sub-tabs in scope together](issues/02-scope-four-subtabs.md) — F-statistics, Allelic diversity, PCA/Projection, Outlier scan; rollout/implementation ordering left to `/to-tickets`, not decided here.
 - [hierfstat/pcadapt added as hard Imports](issues/03-dependencies-imports.md) — consistent with the shinyFiles/future/promises precedent from the field-prep-app effort.
 - [hierfstat/pcadapt confirmed CRAN-safe](issues/04-dependency-cran-readiness.md) — both actively maintained on CRAN, GPL(>=2)-compatible with v1's GPL-3; pcadapt has compiled code (Rcpp) but CRAN binaries cover it, no submission blocker.
+- [Data source mapping: new selector-decoupled reactive](issues/05-data-source-mapping.md) — "raw" = `update.Haplo.file()` directly; "filtered" = a new `PopGenetics.filtered.haplo()` duplicating `Filter.haplo.by.RDnAR()`'s per-locus threshold logic but sourced from the full dataset, not `Min.filter.haplo()`. Duplicated, not factored/parameterized.
 
 ## Not yet specified
 

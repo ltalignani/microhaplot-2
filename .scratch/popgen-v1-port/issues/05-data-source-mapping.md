@@ -1,5 +1,5 @@
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -32,3 +32,36 @@ thresholds (from `filterParam`) to the full `update.Haplo.file()`,
 decoupled from the group/locus/individual selector — mirroring what
 v2's `filtered_data()` actually means? If (b), where should that new
 reactive live and what exactly should it filter on?
+
+## Answer
+
+Option (b): a new reactive, decoupled from the group/locus/individual
+selector.
+
+`Filter.haplo.by.RDnAR()` (`server.R` ~line 1057) already has exactly the
+right per-locus threshold logic — it joins `annotateTab$tbl` for
+per-locus `min.rd`/`min.ar`/`n.alleles`, honors the 3 `filterParam$opts`
+override modes ("1" = raise-if-below-baseline, "2" = override-all, else
+broad-stroke), then filters on `allele.balance >= min.ar`, `rank <=
+n.alleles`, and summed `depth >= min.rd` per group/id/locus. The only
+change needed is its *source*: `Min.filter.haplo()` (selector-narrowed) →
+`update.Haplo.file()` (the full dataset).
+
+**Decision**: duplicate `Filter.haplo.by.RDnAR()` as a new reactive (name
+suggestion: `PopGenetics.filtered.haplo()`) living right next to it in
+`server.R`, identical logic, swapping only the source reactive. Not
+factored into a parameterized shared function — `Filter.haplo.by.RDnAR()`
+is a zero-argument Shiny reactive hard-wired to `Min.filter.haplo()`;
+turning it into a parameterized function touches existing, fragile code
+in a 3887-line file for a ~25-line duplication saved. Not worth the risk.
+
+Output shape: same as the existing reactive — standard `haplo_data`
+columns (`group`, `id`, `locus`, `haplo`, `depth`, `allele.balance`,
+`rank`) plus the joined `min.rd`/`min.ar`/`n.alleles` annotation columns.
+The extra columns are harmless for `pop_genetics_encoding.R`'s
+`encode_hierfstat()`/`encode_onehot()`, which only reference specific
+named columns — no `select()` cleanup is strictly required, though one
+can be added for tidiness.
+
+The "raw" data source is simply `update.Haplo.file()` directly (already
+decoupled from the selector — no new reactive needed for that side).
