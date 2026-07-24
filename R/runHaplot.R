@@ -182,6 +182,20 @@ prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
     }
   }
 
+  # gzipped VCF support: same piped-open idiom as BAM above (hapture.pl's
+  # `open VCF, $opt{v}` doesn't decompress gzip on its own, but a path
+  # string ending in "|" runs it as a shell command and streams stdout).
+  is.gz.vcf <- tolower(tools::file_ext(vcf.path)) == "gz"
+  if (is.gz.vcf) {
+    if (.Platform$OS.type == "windows") {
+      stop("Gzipped VCF input is not yet supported on Windows. Please decompress the VCF before calling prepHaplotFiles().")
+    }
+    if (!nzchar(Sys.which("gunzip"))) {
+      stop("A gzipped VCF was supplied, but 'gunzip' was not found on your PATH. Install gzip/gunzip to use a .vcf.gz file with prepHaplotFiles().")
+    }
+  }
+  vcf.arg <- if (is.gz.vcf) paste0('"gunzip -c ', vcf.path, ' |"') else vcf.path
+
   garb <- sapply(1:nrow(read.label), function(i) {
 
     line <- read.label[i,] %>% unlist
@@ -203,7 +217,7 @@ prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
     } else {
       wait.ln <- ifelse(i %% n.jobs == 0," wait;"," ")
       run.perl.script <- paste0("perl ", haptureDir,
-                                " -v ", vcf.path, " ",
+                                " -v ", vcf.arg,
                                 " -s ", sam.arg,
                                 " -i ", line[2],
                                 " -g ", line[3], " > ",

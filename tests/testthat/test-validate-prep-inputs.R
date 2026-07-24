@@ -48,6 +48,19 @@ test_that("happy path: valid inputs pass with no errors", {
   expect_gt(length(res$passes), 0)
 })
 
+test_that("a gzipped VCF passes validation the same as the plain VCF", {
+  skip_if_not(samtools_available, "samtools not available")
+  skip_if_not(nzchar(Sys.which("gunzip")), "gunzip not available")
+  fx <- setup_bam_fixture()
+  vcf_gz <- paste0(fx$vcf, ".gz")
+  system2("gzip", c("-k", fx$vcf))
+
+  res <- validate_prep_inputs(fx$dir, make_tsv(fx$samples), vcf_gz)
+
+  expect_true(res$ok)
+  expect_length(res$errors, 0)
+})
+
 test_that("missing BAM file referenced in TSV is reported as an error", {
   skip_if_not(samtools_available, "samtools not available")
   fx <- setup_bam_fixture()

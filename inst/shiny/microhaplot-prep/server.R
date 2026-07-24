@@ -167,11 +167,18 @@ shinyServer(function(input, output, session) {
     content  = function(file) writeLines(TSV_TEMPLATE_HEADER, file)
   )
 
+  # step1_ui()/step2_ui() must not read rv$folder/rv$tsv/rv$vcf directly:
+  # they're called from inside output$wizard's renderUI, and a Shiny
+  # fileInput/shinyDirButton re-created by a re-render loses the browser's
+  # native "file selected" display even though the upload itself already
+  # succeeded. The "✓ selected" indicators live in their own small
+  # uiOutputs below instead, so picking a file/folder no longer
+  # invalidates (and hence never recreates) these widgets.
   step1_ui <- function() {
     tagList(
       p("Select the folder on your computer that contains all the BAM files for this run."),
       shinyDirButton("dir_choose", "Browse for folder…", "Select a BAM folder"),
-      if (!is.null(rv$folder)) tags$p(style = "color:#27ae60;", paste("✓", rv$folder))
+      uiOutput("folder_status")
     )
   }
 
@@ -181,9 +188,23 @@ shinyServer(function(input, output, session) {
       fileInput("tsv_file", "Metadata TSV", accept = ".tsv"),
       downloadButton("template", "Download TSV template"),
       tags$br(), tags$br(),
-      fileInput("vcf_file", "VCF file", accept = ".vcf")
+      fileInput("vcf_file", "VCF file",
+                accept = c(".vcf", ".vcf.gz", "application/gzip",
+                           "application/x-gzip", "text/plain")),
+      uiOutput("file_status")
     )
   }
+
+  output$folder_status <- renderUI({
+    if (!is.null(rv$folder)) tags$p(style = "color:#27ae60;", paste("✓", rv$folder))
+  })
+
+  output$file_status <- renderUI({
+    tagList(
+      if (!is.null(rv$tsv)) tags$p(style = "color:#27ae60;", paste("✓ TSV:", rv$tsv$name)),
+      if (!is.null(rv$vcf)) tags$p(style = "color:#27ae60;", paste("✓ VCF:", rv$vcf$name))
+    )
+  })
 
   step4_ui <- function() {
     if (!is.null(rv$extraction_error)) {
@@ -238,6 +259,19 @@ shinyServer(function(input, output, session) {
     )
   }
 
+  # Separate output so steps 1-2 (which hold fileInput/shinyDirButton
+  # widgets) don't get invalidated by the same rv$folder/tsv/vcf changes
+  # this needs to react to — see the note on step1_ui()/step2_ui() above.
+  output$nav_buttons <- renderUI({
+    step <- rv$step
+    tagList(
+      if (step > 1 && step < 5) actionButton("back_step", "← Back"),
+      if (step == 1 && !is.null(rv$folder)) actionButton("next_step", "Next →"),
+      if (step == 2 && !is.null(rv$tsv) && !is.null(rv$vcf)) actionButton("next_step", "Validate →"),
+      if (step == 3 && isTRUE(validation()$ok)) actionButton("next_step", "Start extraction →")
+    )
+  })
+
   output$wizard <- renderUI({
     step <- rv$step
     tagList(
@@ -251,10 +285,7 @@ shinyServer(function(input, output, session) {
       ),
       tags$div(
         style = "margin-top:24px; display:flex; gap:8px;",
-        if (step > 1 && step < 5) actionButton("back_step", "← Back"),
-        if (step == 1 && !is.null(rv$folder)) actionButton("next_step", "Next →"),
-        if (step == 2 && !is.null(rv$tsv) && !is.null(rv$vcf)) actionButton("next_step", "Validate →"),
-        if (step == 3 && isTRUE(validation()$ok)) actionButton("next_step", "Start extraction →")
+        uiOutput("nav_buttons", inline = TRUE)
       )
     )
   })
