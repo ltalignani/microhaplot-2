@@ -37,10 +37,10 @@ hand to `/to-spec` — not working code.
 - [Folder picker uses shinyFiles](issues/11-folder-picker-mechanism.md) — purpose-built, cross-platform, stays in-browser; HTML5 `webkitdirectory`, `rstudioapi`, and `tcltk` all ruled out for this audience/setup.
 - [Async execution via future/promises](issues/12-async-execution-architecture.md) — `prepHaplotFiles()` wrapped whole in a `future` (`plan(multisession)`), no changes inside it; main Shiny session stays free to poll for progress. Standard RStudio/Posit pattern for long-running Shiny tasks.
 - [TSV schema: header row + 4 columns](issues/13-tsv-schema-detail.md) — `bam_file, individual_id, group, color` (optional), header required, downloadable template, validation rules for each column.
+- [Chromosome comparison via VCF CHROM column vs union of BAM @SQ headers](issues/14-chromosome-comparison-mechanism.md) — piggybacks on the existing per-BAM truncation-check pass; reports missing VCF contigs and affected-BAM count.
 
 ## Not yet specified
 
-- Exact validation error-message wording/UX for non-technical users — depends on the folder-selection mechanism, async-execution architecture, and chromosome-comparison mechanism resolving first (tickets below).
 - Whether/how to support cancelling a long-running extraction once started.
 - Performance characteristics of the chosen truncation/chromosome-check approach at genuinely large scale (thousands of BAM files) — may need empirical testing once the mechanism is chosen.
 - Package/function naming and app entry-point wiring (e.g. an exported `runShinyHaplotPrep()`-style launcher) — likely falls out naturally during implementation planning rather than needing its own decision.
