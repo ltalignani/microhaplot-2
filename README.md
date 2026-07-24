@@ -198,6 +198,49 @@ haplo.read.tbl <- prepHaplotFiles(run.label = run.label,
 runShinyHaplot(app.path)
 ```
 
+## Field Genotyping Prep app (guided alternative to `prepHaplotFiles`)
+
+If you'd rather not call `prepHaplotFiles` from the R console yourself —
+for example, if you're processing a large field campaign (hundreds or
+thousands of samples) and would prefer a guided, point-and-click
+workflow — `microhaplot` also bundles a second, companion Shiny app that
+wraps `prepHaplotFiles` behind a step-by-step wizard. No bioinformatics
+background or R scripting is required to use it.
+
+Launch it the same way you'd launch the main app:
+
+``` r
+library(microhaplot)
+runShinyHaplotPrep()
+```
+
+The wizard walks through five steps:
+
+1.  **Select folder** — browse to the local folder containing all of
+    your BAM files for this run (no need to upload files one by one).
+2.  **Upload files** — provide a metadata TSV (with a header row:
+    `bam_file`, `individual_id`, `group`, and an optional `color`
+    column) and the VCF defining your target SNPs. A blank template TSV
+    is available to download directly from this step.
+3.  **Validate** — before anything is extracted, the app checks that
+    every BAM referenced in your TSV exists in the selected folder,
+    that none of your BAM files are truncated/corrupted (via `samtools
+    quickcheck`), and that your VCF's chromosome names match your BAM
+    files' reference names. Every problem found is shown at once.
+4.  **Extract** — once validation passes, extraction runs in the
+    background (your browser stays responsive) with a live progress
+    bar, calling the same `prepHaplotFiles` used above — no separate
+    extraction engine.
+5.  **Done** — the two output `.rds` files are written to
+    `~/Shiny/microhaplot` (created automatically on first use, same
+    convention as `mvShinyHaplot("~/Shiny")` above) and their paths are
+    shown so you know exactly where to find them. Open the main
+    `microhaplot` app separately (`runShinyHaplot()`) to explore the
+    result.
+
+This app has the same `samtools` requirement as BAM input above, and
+BAM input is likewise not currently supported on Windows.
+
 ## Suggestions
 
   - SAM/BAM files: For pair-ended experiment, both directional reads
