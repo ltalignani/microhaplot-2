@@ -24,7 +24,8 @@ Imports:
     shinyWidgets (>= 0.4.3),
     ggiraph (>= 0.6.0),
     tools,
-    shinyFiles (>= 0.9.0)
+    shinyFiles (>= 0.9.0),
+    parallel
 URL: https://github.com/ngthomas/microhaplot
 BugReports: https://github.com/ngthomas/microhaplot/issues
 RoxygenNote: 7.1.1
