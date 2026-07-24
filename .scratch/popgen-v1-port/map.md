@@ -36,6 +36,7 @@ ready to hand to `/to-spec` — not working code.
 - [Excludes external reference-panel merge](issues/01-scope-exclude-reference-panel.md) — a distinct, larger future effort; this map covers the 4 core sub-tabs on the user's own data only.
 - [All 4 core sub-tabs in scope together](issues/02-scope-four-subtabs.md) — F-statistics, Allelic diversity, PCA/Projection, Outlier scan; rollout/implementation ordering left to `/to-tickets`, not decided here.
 - [hierfstat/pcadapt added as hard Imports](issues/03-dependencies-imports.md) — consistent with the shinyFiles/future/promises precedent from the field-prep-app effort.
+- [hierfstat/pcadapt confirmed CRAN-safe](issues/04-dependency-cran-readiness.md) — both actively maintained on CRAN, GPL(>=2)-compatible with v1's GPL-3; pcadapt has compiled code (Rcpp) but CRAN binaries cover it, no submission blocker.
 
 ## Not yet specified
 
