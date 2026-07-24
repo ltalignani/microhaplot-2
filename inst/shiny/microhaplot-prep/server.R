@@ -1,6 +1,10 @@
 library(shiny)
 library(shinyFiles)
 library(microhaplot)
+library(future)
+library(promises)
+
+future::plan(future::multisession)
 
 TSV_TEMPLATE_HEADER <- "bam_file\tindividual_id\tgroup\tcolor"
 
@@ -19,6 +23,9 @@ shinyServer(function(input, output, session) {
     folder           = NULL,
     tsv              = NULL,
     vcf              = NULL,
+    extracting       = FALSE,
+    out_path         = NULL,
+    expected_total   = NULL,
     extraction_error = NULL,
     result_rds       = NULL,
     result_posinfo   = NULL
@@ -56,23 +63,72 @@ shinyServer(function(input, output, session) {
       if (!dir.exists(app.path)) mvShinyHaplot(shiny_dir)
 
       n.jobs <- max(1, parallel::detectCores() - 1)
+      folder <- rv$folder
+      vcf.path <- rv$vcf$datapath
 
-      prepHaplotFiles(
-        run.label = run.label,
-        sam.path  = rv$folder,
-        label.path = label_path,
-        vcf.path  = rv$vcf$datapath,
-        out.path  = out.path,
-        app.path  = app.path,
-        n.jobs    = n.jobs
+      # rv$out_path/expected_total feed the progress-bar polling observer
+      # below; rv$extracting gates it on/off.
+      rv$out_path <- out.path
+      rv$expected_total <- nrow(tsv_df)
+      rv$extracting <- TRUE
+
+      # prepHaplotFiles() itself is not modified — it's called exactly as
+      # in the synchronous version, just handed to a background worker
+      # process (future::plan(multisession)) so the main Shiny session
+      # stays free to keep polling intermed/*.summary for progress. Only
+      # plain values are referenced inside future({...}) — never `rv`,
+      # `input`, or `session`, none of which are meaningful across
+      # process boundaries.
+      f <- future::future({
+        prepHaplotFiles(
+          run.label  = run.label,
+          sam.path   = folder,
+          label.path = label_path,
+          vcf.path   = vcf.path,
+          out.path   = out.path,
+          app.path   = app.path,
+          n.jobs     = n.jobs
+        )
+      }, seed = TRUE)
+
+      promises::then(
+        f,
+        onFulfilled = function(value) {
+          rv$extracting <- FALSE
+          rv$result_rds     <- file.path(app.path, paste0(run.label, ".rds"))
+          rv$result_posinfo <- file.path(app.path, paste0(run.label, "_posinfo.rds"))
+          rv$step <- 5
+        },
+        onRejected = function(error) {
+          rv$extracting <- FALSE
+          rv$extraction_error <- conditionMessage(error)
+        }
       )
-      rv$result_rds     <- file.path(app.path, paste0(run.label, ".rds"))
-      rv$result_posinfo <- file.path(app.path, paste0(run.label, "_posinfo.rds"))
-      rv$step <- 5
     }, error = function(e) {
+      rv$extracting <- FALSE
       rv$extraction_error <- conditionMessage(e)
     })
   }
+
+  # Progress bar: poll the count of *.summary files prepHaplotFiles()
+  # produces in intermed/ (one per processed SAM/BAM row) while extraction
+  # runs in the background. Self-stops once rv$extracting is FALSE.
+  progress_count <- reactiveVal(0)
+  observe({
+    req(isTRUE(rv$extracting))
+    invalidateLater(300, session)
+    intermed_dir <- file.path(rv$out_path, "intermed")
+    count <- if (dir.exists(intermed_dir)) {
+      # Excludes "all.summary", the final concatenated file
+      # prepHaplotFiles() also writes into the same directory — only the
+      # per-sample "<run.label>_<id>_<i>.summary" files should count.
+      length(list.files(intermed_dir, pattern = "\\.summary$")) -
+        file.exists(file.path(intermed_dir, "all.summary"))
+    } else {
+      0
+    }
+    progress_count(count)
+  })
 
   observeEvent(input$next_step, {
     if (rv$step == 3) {
@@ -116,7 +172,19 @@ shinyServer(function(input, output, session) {
         p("Go back and check your inputs, then try again.")
       )
     } else {
-      p("Extracting haplotypes… this can take a while for large batches. The app may appear unresponsive until this finishes.")
+      total <- rv$expected_total
+      done <- progress_count()
+      pct <- if (is.null(total) || total == 0) 0 else min(100, round(100 * done / total))
+      tagList(
+        p("Extracting haplotypes… this can take a while for large batches."),
+        tags$div(
+          style = "background:#ecf0f1; border-radius:6px; overflow:hidden; height:24px;",
+          tags$div(style = sprintf(
+            "background:#2c3e50; width:%d%%; height:100%%; transition:width .3s;", pct
+          ))
+        ),
+        tags$p(sprintf("%d / %s samples processed (%d%%)", done, if (is.null(total)) "?" else total, pct))
+      )
     }
   }
 

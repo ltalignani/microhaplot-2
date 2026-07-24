@@ -25,7 +25,9 @@ Imports:
     ggiraph (>= 0.6.0),
     tools,
     shinyFiles (>= 0.9.0),
-    parallel
+    parallel,
+    future (>= 1.30.0),
+    promises (>= 1.2.0)
 URL: https://github.com/ngthomas/microhaplot
 BugReports: https://github.com/ngthomas/microhaplot/issues
 RoxygenNote: 7.1.1
