@@ -16,6 +16,26 @@ runShinyHaplot <- function(path = system.file("shiny", "microhaplot", package = 
   shiny::runApp(path, display.mode = "normal")
 }
 
+#' Run shiny microhaplot field genotyping prep app
+#'
+#' Run the companion Shiny app that turns a local folder of BAM files, a
+#' VCF, and a metadata TSV into the two .rds files the main microhaplot
+#' app's "Data Set" tab consumes — for users who don't want to call
+#' \code{prepHaplotFiles()} from an R console directly.
+#' @param path Path to the shiny microhaplot-prep app. Optional. If not specified, the path is default to local app path.
+#' @return Runs the microhaplot-prep Shiny application via \code{shiny::runApp} which typically doesn't return; interrupt R to stop the application (usually by pressing Ctrl+C or Esc).
+#' @export
+#' @examples
+#' if(interactive()){
+#' runShinyHaplotPrep()
+#' }
+runShinyHaplotPrep <- function(path = system.file("shiny", "microhaplot-prep", package = "microhaplot")) {
+  if (path == "" || !file.exists(path)) {
+    stop("Could not find Shiny directory", call. = FALSE)
+  }
+  shiny::runApp(path, display.mode = "normal")
+}
+
 #' Transfer a copy of microhaplot app.
 #'
 #' Moves shiny microhaplot app to a different directory

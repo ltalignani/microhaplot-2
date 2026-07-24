@@ -3,6 +3,7 @@
 export(mvShinyHaplot)
 export(prepHaplotFiles)
 export(runShinyHaplot)
+export(runShinyHaplotPrep)
 importFrom(magrittr,"%>%")
 importFrom(utils,combn)
 importFrom(utils,read.table)
