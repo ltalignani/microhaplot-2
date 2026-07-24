@@ -8,7 +8,7 @@ status](https://www.r-pkg.org/badges/version/microhaplot)](https://CRAN.R-projec
 <!-- badges: end -->
 
 `microhaplot` generates visual summaries of microhaplotypes found in
-short read alignments. All you need are alignment SAM files and a
+short read alignments. All you need are alignment SAM or BAM files and a
 variant call VCF file. (The latter tells `microhaplot` which SNPs to
 include into microhaplotypes). It was designed for extracting and
 visualized haplotypes from high-quality amplicon sequencing data. We
@@ -26,13 +26,17 @@ workflow:
     a single data frame that is easily operated upon. This is done using
     the function `microhaplot::prepHaplotFiles`. You must supply a VCF
     file that includes variants that you are interested in extracting,
-    and as many SAM files (one for each individual) that you want to
-    extract read information from at each of the variants. The function
-    `microhaplot::prepHaplotFiles` makes a call to PERL to parse the
-    CIGAR strings in the SAM files to extract the variant information at
-    each read and store this information into a data frame which gets
-    saved with the installed Shiny app (see below) for later use.
-    Depending on the size of the data set, this can take a few minutes.
+    and as many SAM or BAM files (one for each individual) that you want
+    to extract read information from at each of the variants. The
+    function `microhaplot::prepHaplotFiles` makes a call to PERL to parse
+    the CIGAR strings in the alignment files to extract the variant
+    information at each read and store this information into a data
+    frame which gets saved with the installed Shiny app (see below) for
+    later use. Depending on the size of the data set, this can take a few
+    minutes. BAM files are streamed through `samtools` rather than
+    converted to SAM on disk first, so they require `samtools` to be
+    installed and on your `PATH` — see **required dependencies** below.
+    (BAM input is not currently supported on Windows.)
 
 2.  The second step is to run the microhaplot Shiny app to visualize the
     sequence information, call genotypes using simple read-depth based
@@ -60,6 +64,16 @@ For Window users, we recommend install it via
 <http://strawberryperl.com/>.  
 For Mac and Linux users, Perl can be downloaded from
 <https://www.perl.org/get.html>
+
+### required samtools dependency (BAM input only):
+
+If you plan to use BAM files (rather than SAM files) with
+`prepHaplotFiles`, you also need `samtools` installed and available on
+your `PATH`. It's not required if you only ever use SAM files.
+Install it from <http://www.htslib.org/> or via your OS package manager
+(e.g. `brew install samtools`, `apt install samtools`). BAM input via
+`samtools` streaming is currently supported on macOS and Linux only, not
+Windows.
 
 You can either clone the repository and build the `microhaplot` package
 yourself, or, more easily, you can install it using
@@ -106,7 +120,7 @@ app.path <- "~/Shiny/microhaplot"
 runShinyHaplot(app.path)
 ```
 
-## Quick Guide to use microhaplot to parse out SAM and VCF files
+## Quick Guide to use microhaplot to parse out SAM/BAM and VCF files
 
 This microhaplot package comes with a small customized sample data drawn
 from an actual run of short read sequencing run on Rockfish species. The
@@ -115,11 +129,11 @@ populations of five individuals each, with a total of twenty
 individuals.
 
 First you need to create a tab-separate **label** file with 3 info
-columns: path to SAM file name, individual ID, and group label (in this
-particular order). If you do not want assign any group label for the
+columns: path to SAM or BAM file name, individual ID, and group label (in
+this particular order). If you do not want assign any group label for the
 individuals, you can just leave it as “NA”. It is recommended that you
-have all of the SAM files under one directory to make this labeling task
-easier.
+have all of the SAM/BAM files under one directory to make this labeling
+task easier.
 
 The `label` file looks like this:
 
@@ -131,11 +145,21 @@ s14.sam s14     kelp
 s18.sam s18     gold
 ```
 
+SAM and BAM files can be freely mixed in the same label file — each row's
+file extension (`.sam` or `.bam`, case-insensitive) decides how it's read.
+BAM files don't need a `.bai` index. For example:
+
+``` txt
+s6.bam  s6      copper
+s11.sam s11     copper
+s13.bam s13     gold
+```
+
 Once you have the label file in place, you can run `prepHaplotFiles`, a
 R function that generates tables of microhaplotype, by providing the
 following: \* a label to display in haPLOType \* path to the directory
-with all SAM files \* path to the `label` file you just created \* path
-to the VCF file  
+with all SAM/BAM files \* path to the `label` file you just created \*
+path to the VCF file  
 \* optional number of threads (for non-Windows user); recommend 2 \* \#
 of processors
 
@@ -176,5 +200,5 @@ runShinyHaplot(app.path)
 
 ## Suggestions
 
-  - SAM files: For pair-ended experiment, both directional reads should
-    be flashed into one.
+  - SAM/BAM files: For pair-ended experiment, both directional reads
+    should be flashed into one.
