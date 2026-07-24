@@ -27,7 +27,9 @@ Imports:
     shinyFiles (>= 0.9.0),
     parallel,
     future (>= 1.30.0),
-    promises (>= 1.2.0)
+    promises (>= 1.2.0),
+    hierfstat,
+    pcadapt
 URL: https://github.com/ngthomas/microhaplot
 BugReports: https://github.com/ngthomas/microhaplot/issues
 RoxygenNote: 7.1.1

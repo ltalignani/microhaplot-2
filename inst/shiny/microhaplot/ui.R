@@ -566,6 +566,65 @@ shinyUI(
                    )
                  )
       ),
+      navbarMenu("Population Genetics",
+                 tabPanel(
+                   h5("F-statistics"),
+                   fluidRow(column(12, uiOutput("popgenGroupWarningFstats"))),
+                   fluidRow(
+                     column(4,
+                            radioButtons("popgenDataSource_fstats", "Data source:",
+                                         c("Raw" = "raw", "Filtered" = "filtered"),
+                                         selected = "raw")
+                     )
+                   ),
+                   fluidRow(column(12, h4("Per-locus Ho / He / Fis / Fst / Fit"))),
+                   fluidRow(
+                     column(10, DT::dataTableOutput("popgenPerlocTbl")),
+                     column(2, downloadButton("popgenDlPerloc", "Download CSV"))
+                   ),
+                   fluidRow(column(12, h4("Pairwise Fst"))),
+                   fluidRow(
+                     column(10, plotOutput("popgenPairwiseHeatmap", height = "auto")),
+                     column(2, downloadButton("popgenDlPairwise", "Download CSV"))
+                   ),
+                   fluidRow(column(12, h4("BetaS"))),
+                   fluidRow(
+                     column(10, DT::dataTableOutput("popgenBetasTbl")),
+                     column(2, downloadButton("popgenDlBetas", "Download CSV"))
+                   ),
+                   fluidRow(
+                     div(style = "padding: 20px; border-bottom: 8px solid white; background: white")
+                   )
+                 ),
+                 tabPanel(
+                   h5("Allelic diversity"),
+                   fluidRow(column(12, uiOutput("popgenGroupWarningRichness"))),
+                   fluidRow(
+                     column(4,
+                            radioButtons("popgenDataSource_richness", "Data source:",
+                                         c("Raw" = "raw", "Filtered" = "filtered"),
+                                         selected = "raw")
+                     )
+                   ),
+                   fluidRow(column(12, h4("Rarefied allelic richness"))),
+                   fluidRow(
+                     column(10, DT::dataTableOutput("popgenRichnessTbl")),
+                     column(2, downloadButton("popgenDlRichness", "Download CSV"))
+                   ),
+                   fluidRow(column(12, plotOutput("popgenRichnessPlot", height = "auto"))),
+                   fluidRow(
+                     div(style = "padding: 20px; border-bottom: 8px solid white; background: white")
+                   )
+                 ),
+                 tabPanel(
+                   h5("PCA / Projection"),
+                   fluidRow(column(12, p("Coming soon.")))
+                 ),
+                 tabPanel(
+                   h5("Outlier scan"),
+                   fluidRow(column(12, p("Coming soon.")))
+                 )
+      ),
       # tabPanel(
       #   "Inferential Analysis",
       #   "SrMicroHap is sensitive only to the changes in \"Locus\" selector tab\n",

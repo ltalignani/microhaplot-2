@@ -1120,6 +1120,83 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
     haplo.join.ar
   })
 
+  # Population Genetics tab's "filtered" data source. Duplicates
+  # Filter.haplo.by.RDnAR()'s per-locus RD/AR/n-alleles threshold logic
+  # verbatim, but sourced from update.Haplo.file() (the full dataset)
+  # instead of Min.filter.haplo() (narrowed by the current group/locus/
+  # individual selector) — population-level statistics need the full
+  # breadth of the data, not whatever's currently selected in a detail
+  # view elsewhere in the app. Deliberately duplicated rather than
+  # parameterizing Filter.haplo.by.RDnAR(), per
+  # .scratch/popgen-v1-port/issues/05-data-source-mapping.md.
+  #
+  # The annotateTab$tbl mutation is copied too for behavioral parity; it's
+  # idempotent (re-applying the same override with the same filterParam
+  # values is a no-op), so running both reactives in either order is safe.
+  PopGenetics.filtered.haplo <- reactive({
+    haplo.sum <- update.Haplo.file()
+
+    if (is.null(haplo.sum) || dim(haplo.sum)[1] ==0)
+      return ()
+
+    haplo.join.ar <- left_join(haplo.sum,
+                               annotateTab$tbl,
+                               by="locus") %>%
+      group_by(locus)
+
+    ## override if the existed value is below the minimal baseline
+    if ("1" %in% filterParam$opts) {
+      haplo.join.ar <- haplo.join.ar %>% mutate(min.rd = ifelse(filterParam$minRD>min.rd,
+                                                                filterParam$minRD,
+                                                                min.rd),
+                                                min.ar= ifelse(filterParam$minAR>min.ar,
+                                                               filterParam$minAR,
+                                                               min.ar),
+                                                n.alleles = ifelse(filterParam$n.alleles>n.alleles,
+                                                                   filterParam$n.alleles,
+                                                                   n.alleles))
+
+      annotateTab$tbl <- annotateTab$tbl %>% mutate(min.rd = ifelse(filterParam$minRD>min.rd,
+                                                                    filterParam$minRD,
+                                                                    min.rd),
+                                                    min.ar= ifelse(filterParam$minAR>min.ar,
+                                                                   filterParam$minAR,
+                                                                   min.ar),
+                                                    n.alleles = ifelse(filterParam$n.alleles>n.alleles,
+                                                                       filterParam$n.alleles,
+                                                                       n.alleles))
+    }
+    # overriding all
+    if ("2" %in% filterParam$opts) {
+      haplo.join.ar <- haplo.join.ar %>% mutate(min.rd = filterParam$minRD,
+                                                min.ar= filterParam$minAR,
+                                                n.alleles = filterParam$n.alleles)
+
+      annotateTab$tbl <- annotateTab$tbl %>% mutate(min.rd = filterParam$minRD,
+                                                    min.ar= filterParam$minAR,
+                                                    n.alleles = filterParam$n.alleles)
+    }
+
+    # using the general broad stroke
+    if (! "3" %in% filterParam$opts)
+      haplo.join.ar <- haplo.join.ar %>%
+      mutate(min.rd = filterParam$minRD,
+             min.ar = filterParam$minAR,
+             n.alleles = filterParam$n.alleles)
+
+    haplo.join.ar <- haplo.join.ar %>% ungroup() %>%
+      filter(allele.balance >= min.ar,
+             rank <= n.alleles) %>%
+      group_by(group, id, locus) %>%
+      mutate(tot.depth = sum(depth)) %>%
+      ungroup() %>%
+      filter(tot.depth >= min.rd) %>%
+      select(-tot.depth) %>%
+      ungroup()
+
+    haplo.join.ar
+  })
+
   # this reactive fn only used for Quality profiling opt (when min RD is replaced)
   Filter.haplo.by.RDhapnAR <- reactive({
     haplo.sum <- Min.filter.haplo()
@@ -3882,5 +3959,109 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
                450),
            0)
   })
+
+  # ---- Population Genetics -----------------------------------------------
+  #
+  # F-statistics and Allelic diversity both derive from compute_fstats(),
+  # so the underlying computation is factored into one helper; each sub-tab
+  # keeps its own data-source toggle (per the UI-layout decision — no
+  # shared/persistent control area in v1), so each gets its own reactive
+  # wrapper around that helper rather than sharing a single reactive.
+  popgen_fstats_for <- function(source_choice) {
+    haplo.data <- if (identical(source_choice, "filtered")) {
+      PopGenetics.filtered.haplo()
+    } else {
+      update.Haplo.file()
+    }
+    if (is.null(haplo.data) || nrow(haplo.data) == 0) return(NULL)
+
+    groups <- stats::setNames(haplo.data$group, haplo.data$id)[unique(haplo.data$id)]
+    if (length(unique(groups)) < 2) return(NULL)
+
+    compute_fstats(encode_hierfstat(haplo.data), groups)
+  }
+
+  PopGenetics.fstats.tab <- reactive({
+    popgen_fstats_for(input$popgenDataSource_fstats)
+  })
+  PopGenetics.fstats.richness <- reactive({
+    popgen_fstats_for(input$popgenDataSource_richness)
+  })
+
+  popgen_group_warning <- function(fstats.reactive) {
+    if (is.null(fstats.reactive())) {
+      div(class = "alert alert-warning",
+          "F-statistics and allelic diversity require at least 2 population groups.")
+    }
+  }
+  output$popgenGroupWarningFstats <- renderUI(popgen_group_warning(PopGenetics.fstats.tab))
+  output$popgenGroupWarningRichness <- renderUI(popgen_group_warning(PopGenetics.fstats.richness))
+
+  output$popgenPerlocTbl <- DT::renderDataTable({
+    req(PopGenetics.fstats.tab())
+    fstats_perloc_table(PopGenetics.fstats.tab())
+  })
+
+  output$popgenPairwiseHeatmap <- renderPlot({
+    req(PopGenetics.fstats.tab())
+    df <- pairwise_fst_long(PopGenetics.fstats.tab())
+    ggplot(df, aes(x = group1, y = group2, fill = fst)) +
+      geom_tile() +
+      geom_text(aes(label = round(fst, 3))) +
+      scale_fill_gradient(low = "white", high = "steelblue", na.value = "grey90") +
+      theme_bw() +
+      xlab("") + ylab("")
+  })
+
+  output$popgenBetasTbl <- DT::renderDataTable({
+    req(PopGenetics.fstats.tab())
+    betas_table(PopGenetics.fstats.tab())
+  })
+
+  output$popgenRichnessTbl <- DT::renderDataTable({
+    req(PopGenetics.fstats.richness())
+    tbl <- allelic_richness_table(PopGenetics.fstats.richness())
+    tbl$richness <- round(tbl$richness, 3)
+    tbl
+  })
+
+  output$popgenRichnessPlot <- renderPlot({
+    req(PopGenetics.fstats.richness())
+    df <- allelic_richness_table(PopGenetics.fstats.richness())
+    df <- df[!is.na(df$richness), ]
+    ggplot(df, aes(x = locus, y = richness, fill = group)) +
+      geom_col(position = "dodge") +
+      theme_bw() +
+      xlab("Locus") + ylab("Rarefied allelic richness")
+  })
+
+  output$popgenDlPerloc <- downloadHandler(
+    filename = function() "fstats_perlocus.csv",
+    content  = function(file) {
+      req(PopGenetics.fstats.tab())
+      write.csv(fstats_perloc_table(PopGenetics.fstats.tab()), file, row.names = FALSE)
+    }
+  )
+  output$popgenDlPairwise <- downloadHandler(
+    filename = function() "fstats_pairwise_fst.csv",
+    content  = function(file) {
+      req(PopGenetics.fstats.tab())
+      write.csv(pairwise_fst_long(PopGenetics.fstats.tab()), file, row.names = FALSE)
+    }
+  )
+  output$popgenDlBetas <- downloadHandler(
+    filename = function() "fstats_betas.csv",
+    content  = function(file) {
+      req(PopGenetics.fstats.tab())
+      write.csv(betas_table(PopGenetics.fstats.tab()), file, row.names = FALSE)
+    }
+  )
+  output$popgenDlRichness <- downloadHandler(
+    filename = function() "allelic_richness.csv",
+    content  = function(file) {
+      req(PopGenetics.fstats.richness())
+      write.csv(allelic_richness_table(PopGenetics.fstats.richness()), file, row.names = FALSE)
+    }
+  )
 
 })
