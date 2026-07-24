@@ -145,10 +145,33 @@ prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
   })
   if (dim(read.label)[2] < 3) stop(label.path, "contains less than 3 columns.")
 
+  # BAM support: hapture.pl only ever reads its SAM input as a forward,
+  # line-by-line stream, so a BAM file can be fed to it by streaming
+  # `samtools view -h` through Perl's piped-open idiom (a two-argument
+  # `open` whose expression ends in "|" runs a shell command and reads its
+  # stdout) instead of materializing a SAM file on disk. This needs no
+  # change to hapture.pl itself, only to how the -s argument is built here.
+  is.bam.row <- tolower(tools::file_ext(read.label[[1]])) == "bam"
+
+  if (any(is.bam.row)) {
+    if (.Platform$OS.type == "windows") {
+      stop("BAM input is not yet supported on Windows. Please convert your BAM files to SAM before calling prepHaplotFiles().")
+    }
+    if (!nzchar(Sys.which("samtools"))) {
+      stop("BAM input detected in the label file, but 'samtools' was not found on your PATH. Install samtools (http://www.htslib.org/) to use BAM files with prepHaplotFiles().")
+    }
+  }
+
   garb <- sapply(1:nrow(read.label), function(i) {
 
     line <- read.label[i,] %>% unlist
-    if (!file.exists(file.path(sam.path,line[1]))) stop("the SAM file, ", file.path(sam.path,line[1]), ", does not exist")
+    if (!file.exists(file.path(sam.path,line[1]))) stop("the alignment file, ", file.path(sam.path,line[1]), ", does not exist")
+
+    sam.arg <- if (is.bam.row[i]) {
+      paste0('"samtools view -h ', sam.path, "/", line[1], ' |"')
+    } else {
+      paste0(sam.path, "/", line[1])
+    }
 
     if(.Platform$OS.type == "windows") {
       run.perl.script <- paste0("perl ", haptureDir,
@@ -161,7 +184,7 @@ prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
       wait.ln <- ifelse(i %% n.jobs == 0," wait;"," ")
       run.perl.script <- paste0("perl ", haptureDir,
                                 " -v ", vcf.path, " ",
-                                " -s ", sam.path, "/", line[1],
+                                " -s ", sam.arg,
                                 " -i ", line[2],
                                 " -g ", line[3], " > ",
                                 out.path, "/intermed/", run.label, "_", line[2],"_",i,".summary &",
@@ -205,7 +228,7 @@ prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
     system(file.path(out.path, runHap.name))
   }
 
-  haplo.sum <- read.table(summary.path, stringsAsFactors = FALSE, sep = "\t") %>% dplyr::tbl_df()
+  haplo.sum <- read.table(summary.path, stringsAsFactors = FALSE, sep = "\t") %>% dplyr::as_tibble()
 
   colnames(haplo.sum) <- c("group", "id", "locus", "haplo", "depth", "sum.Phred.C", "max.Phred.C")
 

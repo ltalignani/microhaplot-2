@@ -22,11 +22,15 @@ Imports:
     shinyBS (>= 0.61),
     tidyr (>= 0.4.1),
     shinyWidgets (>= 0.4.3),
-    ggiraph (>= 0.6.0)
+    ggiraph (>= 0.6.0),
+    tools
 URL: https://github.com/ngthomas/microhaplot
 BugReports: https://github.com/ngthomas/microhaplot/issues
 RoxygenNote: 7.1.1
-Suggests: 
+Suggests:
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat (>= 3.0.0),
+    withr
 VignetteBuilder: knitr
+Config/testthat/edition: 3
