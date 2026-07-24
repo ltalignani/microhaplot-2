@@ -35,6 +35,7 @@ hand to `/to-spec` — not working code.
 - [UI language is English](issues/09-ui-language.md) — matches the existing microhaplot app.
 - [VCF via simple fileInput per run](issues/10-vcf-reuse.md) — no VCF library/reuse mechanism in this effort.
 - [Folder picker uses shinyFiles](issues/11-folder-picker-mechanism.md) — purpose-built, cross-platform, stays in-browser; HTML5 `webkitdirectory`, `rstudioapi`, and `tcltk` all ruled out for this audience/setup.
+- [Async execution via future/promises](issues/12-async-execution-architecture.md) — `prepHaplotFiles()` wrapped whole in a `future` (`plan(multisession)`), no changes inside it; main Shiny session stays free to poll for progress. Standard RStudio/Posit pattern for long-running Shiny tasks.
 
 ## Not yet specified
 
