@@ -1,5 +1,5 @@
 Type: research
-Status: open
+Status: resolved
 
 ## Question
 
@@ -11,3 +11,15 @@ the options (e.g. the `shinyFiles` package, HTML5
 validation, `rstudioapi`-based pickers when run inside RStudio, etc.),
 their platform support (macOS/Linux/Windows), and trade-offs, and
 recommend one.
+
+## Answer
+
+`shinyFiles::shinyDirButton()` / `shinyDirChoose()` — purpose-built for
+browsing the local filesystem from a locally-run Shiny app, cross-platform,
+actively maintained, stays inside the browser window (no native-dialog
+focus/z-order risk). HTML5 `webkitdirectory` was disqualified (it's
+actually a per-file upload in disguise, ruled out already). `rstudioapi`
+requires RStudio to be running (too fragile). `tcltk::tk_choose.dir()` is
+a plausible runner-up but risks the native dialog opening behind the
+browser window, confusing for this non-technical audience. Full survey:
+[folder-picker research](11-folder-picker-research.md).

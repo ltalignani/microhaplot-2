@@ -34,6 +34,7 @@ hand to `/to-spec` — not working code.
 - [n.jobs hidden, auto-detected](issues/08-njobs-exposure.md) — via `parallel::detectCores()`, not exposed to the user.
 - [UI language is English](issues/09-ui-language.md) — matches the existing microhaplot app.
 - [VCF via simple fileInput per run](issues/10-vcf-reuse.md) — no VCF library/reuse mechanism in this effort.
+- [Folder picker uses shinyFiles](issues/11-folder-picker-mechanism.md) — purpose-built, cross-platform, stays in-browser; HTML5 `webkitdirectory`, `rstudioapi`, and `tcltk` all ruled out for this audience/setup.
 
 ## Not yet specified
 
