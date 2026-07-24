@@ -1,7 +1,13 @@
 library(shiny)
 library(shinyFiles)
+library(microhaplot)
 
 TSV_TEMPLATE_HEADER <- "bam_file\tindividual_id\tgroup\tcolor"
+
+read_metadata_tsv <- function(path) {
+  utils::read.delim(path, header = TRUE, sep = "\t", colClasses = "character",
+                     check.names = FALSE, stringsAsFactors = FALSE)
+}
 
 shinyServer(function(input, output, session) {
 
@@ -59,6 +65,27 @@ shinyServer(function(input, output, session) {
     tags$div(style = "color:#7f8c8d;", p(sprintf("%s — coming soon.", label)))
   }
 
+  # Computed once per entry to step 3; re-read whenever the inputs it
+  # depends on change while step 3 is showing.
+  validation <- reactive({
+    req(rv$folder, rv$tsv, rv$vcf)
+    tsv_df <- tryCatch(read_metadata_tsv(rv$tsv$datapath), error = function(e) NULL)
+    if (is.null(tsv_df)) {
+      return(list(ok = FALSE, errors = "Could not read the metadata TSV file.", warnings = character(), passes = character()))
+    }
+    validate_prep_inputs(rv$folder, tsv_df, rv$vcf$datapath)
+  })
+
+  step3_ui <- function() {
+    res <- validation()
+    tagList(
+      p("Checking your files before starting extraction…"),
+      lapply(res$passes, function(x) tags$p(style = "color:#27ae60;", paste("✓", x))),
+      lapply(res$warnings, function(x) tags$p(style = "color:#e67e22;", paste("⚠", x))),
+      lapply(res$errors, function(x) tags$p(style = "color:#c0392b;", paste("✗", x)))
+    )
+  }
+
   output$wizard <- renderUI({
     step <- rv$step
     tagList(
@@ -66,7 +93,7 @@ shinyServer(function(input, output, session) {
       switch(step,
         step1_ui(),
         step2_ui(),
-        placeholder_ui("Validate"),
+        step3_ui(),
         placeholder_ui("Extract"),
         placeholder_ui("Done")
       ),
@@ -75,7 +102,8 @@ shinyServer(function(input, output, session) {
         if (step > 1) actionButton("back_step", "← Back"),
         if (step == 1 && !is.null(rv$folder)) actionButton("next_step", "Next →"),
         if (step == 2 && !is.null(rv$tsv) && !is.null(rv$vcf)) actionButton("next_step", "Validate →"),
-        if (step >= 3 && step < length(STEP_LABELS)) actionButton("next_step", "Next →")
+        if (step == 3 && isTRUE(validation()$ok)) actionButton("next_step", "Start extraction →"),
+        if (step > 3 && step < length(STEP_LABELS)) actionButton("next_step", "Next →")
       )
     )
   })
