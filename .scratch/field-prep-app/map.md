@@ -38,6 +38,7 @@ hand to `/to-spec` — not working code.
 - [Async execution via future/promises](issues/12-async-execution-architecture.md) — `prepHaplotFiles()` wrapped whole in a `future` (`plan(multisession)`), no changes inside it; main Shiny session stays free to poll for progress. Standard RStudio/Posit pattern for long-running Shiny tasks.
 - [TSV schema: header row + 4 columns](issues/13-tsv-schema-detail.md) — `bam_file, individual_id, group, color` (optional), header required, downloadable template, validation rules for each column.
 - [Chromosome comparison via VCF CHROM column vs union of BAM @SQ headers](issues/14-chromosome-comparison-mechanism.md) — piggybacks on the existing per-BAM truncation-check pass; reports missing VCF contigs and affected-BAM count.
+- [UI is a linear step-gated wizard](issues/15-ui-wireframe.md) — chosen over a single-scroll page and a persistent-sidebar layout after an interactive 3-variant prototype review; reference implementation kept at `prototype/app.R`.
 
 ## Not yet specified
 
