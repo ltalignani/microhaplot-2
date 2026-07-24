@@ -1,51 +1,99 @@
-# Tickets: Accept BAM input in prepHaplotFiles()
+# Tickets: Field genotyping prep app
 
-Breaks down the spec at `.scratch/bam-input-prephaplotfiles/PRD.md` — teaching
-`prepHaplotFiles()` to accept BAM files (streamed through `samtools view -h`
-via Perl's piped-open idiom, no `hapture.pl` changes, no intermediate SAM
-files) alongside the SAM files it already supports.
+Builds the field genotyping prep app described in
+`.scratch/field-prep-app/PRD.md` — a second Shiny app, bundled alongside
+microhaplot's existing visualization app, that lets non-bioinformatician
+field technicians turn a local folder of BAM files, a VCF, and a metadata
+TSV into the two `.rds` files microhaplot's Data Set tab consumes.
 
-Work the **frontier**: any ticket whose blockers are all done. This chain is
-linear — top to bottom.
+Work the **frontier**: any ticket whose blockers are all done. This chain
+is linear — top to bottom.
 
-## Support BAM input in prepHaplotFiles()
+## Wizard shell with folder and file selection
 
-**What to build:** `prepHaplotFiles()` accepts `.bam` rows in its
-`label.txt` in addition to the `.sam` rows it already supports, detected by
-file extension. For `.bam` rows, it streams the file through `samtools view
--h` (piped into Perl's `open`, per the spec's mechanism) instead of passing
-a plain file path — no intermediate SAM file is ever written, and no `.bai`
-index is required. A run with a mix of `.sam` and `.bam` rows in the same
-label file works correctly. If `samtools` isn't on `PATH` and at least one
-`.bam` row is present, `prepHaplotFiles()` stops with a clear error message
-(mirroring the existing Perl-version check), rather than failing silently
-or surfacing a raw Perl error. `hapture.pl` itself is unmodified; the
-function signature of `prepHaplotFiles()` is unchanged.
-
-This repo has no test infrastructure today — bootstrapping it (`testthat`
-added to `DESCRIPTION`'s `Suggests`, a `tests/testthat/` directory) is part
-of this ticket, not a separate one.
+**What to build:** The app exists (scaffolded alongside the existing
+microhaplot Shiny app in the same package, with its own launch entry
+point) and its 5-step wizard is navigable end to end: a step indicator
+across the top, and Next/Back controls that move between steps. Step 1
+("Select folder") uses a real `shinyFiles` folder picker to choose a local
+directory of BAM files. Step 2 ("Upload files") uses real `fileInput`s for
+the metadata TSV and the VCF, plus a downloadable pre-filled TSV template
+(header row: `bam_file`, `individual_id`, `group`, `color`). Steps 3
+("Validate"), 4 ("Extract"), and 5 ("Done") render placeholder content for
+now — their real behavior lands in later tickets. The selected folder path
+and uploaded file references are held in shared wizard state that later
+steps will read from.
 
 **Blocked by:** None — can start immediately
 
-- [ ] `.bam` rows in `label.txt` are detected by extension (case-insensitive) and routed through a piped `samtools view -h` command; `.sam` rows continue to work exactly as before
-- [ ] No intermediate `.sam` file is ever written to disk for a `.bam` input, and no `.bai` index is required
-- [ ] A label file mixing `.sam` and `.bam` rows in the same run produces correct combined output
-- [ ] Missing `samtools` on `PATH` (when at least one `.bam` row is present) produces a clear, explicit error message rather than a silent failure or raw Perl error
-- [ ] `testthat` is added to `DESCRIPTION`'s `Suggests` and a `tests/testthat/` directory exists
-- [ ] A `.bam` test fixture is derived from the existing `inst/extdata/sebastes_sam.tar.gz` SAM fixture (e.g. via `samtools view -bS`) for a subset of samples
-- [ ] An automated test proves behavioral equivalence: running `prepHaplotFiles()` against `.sam` files and against the equivalent derived `.bam` files (same underlying reads, same VCF) produces identical resulting data (same rows, columns, values)
+- [ ] The 5-step wizard renders with a step indicator and Next/Back navigation matching the reference prototype's structure (`.scratch/field-prep-app/prototype/app.R`)
+- [ ] Step 1 lets the user pick a real local folder via `shinyFiles`; the chosen path is held in wizard state and shown back to the user
+- [ ] Step 2 accepts a TSV and a VCF via `fileInput`, and offers a downloadable template TSV with the header row `bam_file`, `individual_id`, `group`, `color`
+- [ ] Steps 3–5 render placeholder ("coming soon") content without erroring
+- [ ] The app has its own launch entry point, installed alongside the existing microhaplot Shiny app in the same package
 
-## Document BAM support in the vignette and README
+## Validation module wired to step 3
 
-**What to build:** `vignettes/microhaplot-data-prep.Rmd` and `README.md`
-describe BAM as a supported entry type in `sam.path`/`label.txt`, with an
-example reflecting the actual behavior shipped in the prior ticket
-(extension-based detection, no indexing required, `samtools` as a new
-runtime dependency for BAM users).
+**What to build:** A set of pure R functions (decoupled from Shiny) that
+validate a run's inputs — this is the spec's single test seam. Given the
+selected folder, the parsed TSV, and the VCF path, the module checks: (1)
+every `bam_file` row exists in the folder and is non-empty/unique on
+`individual_id`, with `group` optionally empty/`"NA"` and `color`
+optionally empty or a valid `#RRGGBB` hex; (2) every referenced BAM file
+passes `samtools quickcheck` (catches truncated/corrupted files); (3) the
+VCF's CHROM column values are all present in the union of every BAM's
+`@SQ` reference names (a VCF chromosome absent from that union is
+reported, with the affected BAM count — the reverse is not an error).
+Step 3 of the wizard calls this module on the real state captured in the
+prior ticket and displays every pass, warning, and blocking error together
+on one screen, not one at a time.
 
-**Blocked by:** Support BAM input in prepHaplotFiles()
+**Blocked by:** Wizard shell with folder and file selection
 
-- [ ] `vignettes/microhaplot-data-prep.Rmd` documents BAM as an accepted `sam.path` entry type, with a worked example
-- [ ] `README.md` mentions BAM support and the new `samtools` runtime dependency for users relying on it
-- [ ] Docs do not claim Windows support for BAM input (explicitly out of scope per the spec)
+- [ ] A pure validation function (or small set of functions) exists, callable without a running Shiny session, returning a structured pass/warning/error result
+- [ ] TSV schema rules are enforced: `bam_file`/`individual_id` required and non-empty, `individual_id` unique, `group` optionally empty/`"NA"`, `color` optionally empty or valid `#RRGGBB`
+- [ ] Every referenced BAM's existence in the selected folder is checked
+- [ ] Every referenced BAM passes (or fails) a `samtools quickcheck`-based truncation check
+- [ ] VCF CHROM values are compared against the union of all BAM `@SQ` names; missing chromosomes are reported with the count of affected BAM files
+- [ ] Step 3 of the wizard calls this module on real inputs and displays all results together
+- [ ] Automated tests cover the validation module directly (happy path, missing BAM, truncated BAM, chromosome mismatch), using fixtures derived the same way as `tests/testthat/test-prepHaplotFiles-bam.R`
+
+## Synchronous extraction end-to-end
+
+**What to build:** Once validation passes, step 4 translates the
+validated TSV into `prepHaplotFiles()`'s internal headerless `label.txt`
+format and calls the real, unmodified `prepHaplotFiles()` with the
+selected folder, VCF, and generated label file (with `n.jobs` chosen
+automatically via `parallel::detectCores()`, not exposed in the UI). Step
+5 shows a success message with the location of the two output `.rds`
+files and tells the user to open microhaplot separately — no automatic
+handoff. The UI is allowed to be unresponsive while extraction runs in
+this ticket; responsiveness is the next ticket's job. The full flow
+(folder → files → validation → extraction → success) now produces real
+output files, verifiable by opening them.
+
+**Blocked by:** Validation module wired to step 3
+
+- [ ] The validated TSV is translated into `prepHaplotFiles()`'s headerless `label.txt` format correctly (row order, columns)
+- [ ] Step 4 calls the real `prepHaplotFiles()` with the selected folder, TSV-derived label file, and uploaded VCF
+- [ ] `n.jobs` is set automatically via `parallel::detectCores()` and is not an exposed UI control
+- [ ] Step 5 reports the real paths of the two produced `.rds` files and does not attempt to launch microhaplot automatically
+- [ ] Running the full wizard against a real BAM/VCF/TSV fixture produces the two `.rds` files with the expected content
+
+## Async execution and progress bar
+
+**What to build:** The `prepHaplotFiles()` call from the previous ticket
+is wrapped whole in a `future` (`future`/`promises`, `future::plan(multisession)`),
+run as an opaque background call with no changes inside `prepHaplotFiles()`
+itself. Step 4 now shows a live progress bar driven by polling the count
+of `*.summary` files in `prepHaplotFiles()`'s `intermed/` output directory
+against the expected total sample count. The Shiny UI stays responsive
+throughout — this is the final, spec-compliant version of the extraction
+step.
+
+**Blocked by:** Synchronous extraction end-to-end
+
+- [ ] The `prepHaplotFiles()` call runs inside a `future` under `plan(multisession)`, without modifying `prepHaplotFiles()` itself
+- [ ] Step 4 shows a progress bar that updates based on polling `intermed/*.summary` file counts while extraction runs in the background
+- [ ] The wizard's UI (navigation, step indicator) remains responsive while extraction is in progress
+- [ ] Step 5 is reached automatically once the background extraction resolves, showing the same success info as the prior ticket
