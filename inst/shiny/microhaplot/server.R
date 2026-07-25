@@ -3962,20 +3962,31 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
 
   # ---- Population Genetics -----------------------------------------------
   #
-  # F-statistics and Allelic diversity both derive from compute_fstats(),
-  # so the underlying computation is factored into one helper; each sub-tab
-  # keeps its own data-source toggle (per the UI-layout decision — no
-  # shared/persistent control area in v1), so each gets its own reactive
-  # wrapper around that helper rather than sharing a single reactive.
-  popgen_fstats_for <- function(source_choice) {
+  # Shared across every Population Genetics sub-tab: each keeps its own
+  # data-source toggle (per the UI-layout decision — no shared/persistent
+  # control area in v1), so these are plain helpers called from each
+  # sub-tab's own reactive wrapper rather than a single shared reactive.
+  popgen_active_data <- function(source_choice) {
     haplo.data <- if (identical(source_choice, "filtered")) {
       PopGenetics.filtered.haplo()
     } else {
       update.Haplo.file()
     }
     if (is.null(haplo.data) || nrow(haplo.data) == 0) return(NULL)
+    haplo.data
+  }
 
-    groups <- stats::setNames(haplo.data$group, haplo.data$id)[unique(haplo.data$id)]
+  popgen_groups_by_id <- function(haplo.data) {
+    stats::setNames(haplo.data$group, haplo.data$id)[unique(haplo.data$id)]
+  }
+
+  # F-statistics and Allelic diversity both derive from compute_fstats(),
+  # so that computation is factored into one helper too.
+  popgen_fstats_for <- function(source_choice) {
+    haplo.data <- popgen_active_data(source_choice)
+    if (is.null(haplo.data)) return(NULL)
+
+    groups <- popgen_groups_by_id(haplo.data)
     if (length(unique(groups)) < 2) return(NULL)
 
     compute_fstats(encode_hierfstat(haplo.data), groups)
@@ -4061,6 +4072,108 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
     content  = function(file) {
       req(PopGenetics.fstats.richness())
       write.csv(allelic_richness_table(PopGenetics.fstats.richness()), file, row.names = FALSE)
+    }
+  )
+
+  # ---- PCA / Projection ----------------------------------------------------
+  #
+  # The external reference-panel projection mode (microhaplot2's
+  # "PCA mode"/effective_pca_mode()) is out of scope here — see
+  # .scratch/popgen-v1-port/map.md — this is the plain "run PCA on my own
+  # data" flow only.
+
+  PopGenetics.pca.data <- reactive({
+    popgen_active_data(input$popgenDataSource_pca)
+  })
+
+  PopGenetics.pca.onehot <- reactive({
+    d <- PopGenetics.pca.data()
+    if (is.null(d)) return(NULL)
+    encode_onehot(d)
+  })
+
+  popgen.pca.explore <- reactiveVal(NULL)
+  popgen.pca.final <- reactiveVal(NULL)
+
+  observeEvent(input$popgenDataSource_pca, {
+    popgen.pca.explore(NULL)
+    popgen.pca.final(NULL)
+  })
+
+  observeEvent(input$popgenPcaExploreBtn, {
+    req(PopGenetics.pca.onehot())
+    popgen.pca.explore(run_pca(PopGenetics.pca.onehot(), K = 10))
+  })
+
+  output$popgenPcaScreeplot <- renderPlot({
+    req(popgen.pca.explore())
+    df <- data.frame(pc = factor(seq_along(popgen.pca.explore()$pct_var)),
+                      pct_var = popgen.pca.explore()$pct_var)
+    ggplot(df, aes(x = pc, y = pct_var, group = 1)) +
+      geom_col(fill = "steelblue") +
+      geom_line(color = "firebrick") +
+      geom_point(color = "firebrick") +
+      theme_bw() +
+      xlab("PC") + ylab("% variance explained")
+  })
+
+  output$popgenPcaPhase2 <- renderUI({
+    req(popgen.pca.explore())
+    tagList(
+      fluidRow(column(12, h4("Phase 2 — Final PCA"))),
+      fluidRow(
+        column(4, numericInput("popgenPcaK", "K (number of PCs)", value = 5, min = 2, max = 20))
+      ),
+      fluidRow(
+        column(2, actionButton("popgenPcaRunBtn", "Run final PCA")),
+        column(2, downloadButton("popgenDlPcaScores", "Download CSV"))
+      ),
+      fluidRow(column(12, plotOutput("popgenPcaPlot12", height = "auto"))),
+      fluidRow(column(12, plotOutput("popgenPcaPlot13", height = "auto"))),
+      fluidRow(column(12, plotOutput("popgenPcaPlot23", height = "auto")))
+    )
+  })
+
+  observeEvent(input$popgenPcaRunBtn, {
+    req(PopGenetics.pca.onehot())
+    groups <- popgen_groups_by_id(PopGenetics.pca.data())
+
+    res <- run_pca(PopGenetics.pca.onehot(), K = input$popgenPcaK)
+    scores <- res$scores
+
+    popgen.pca.final(data.frame(
+      id = rownames(scores),
+      group = groups[rownames(scores)],
+      scores,
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    ))
+  })
+
+  popgen_pca_score_plot <- function(df, x, y) {
+    ggplot(df, aes(x = .data[[x]], y = .data[[y]], color = group)) +
+      geom_point(size = 2) +
+      theme_bw()
+  }
+
+  output$popgenPcaPlot12 <- renderPlot({
+    req(popgen.pca.final())
+    popgen_pca_score_plot(popgen.pca.final(), "PC1", "PC2")
+  })
+  output$popgenPcaPlot13 <- renderPlot({
+    req(popgen.pca.final())
+    popgen_pca_score_plot(popgen.pca.final(), "PC1", "PC3")
+  })
+  output$popgenPcaPlot23 <- renderPlot({
+    req(popgen.pca.final())
+    popgen_pca_score_plot(popgen.pca.final(), "PC2", "PC3")
+  })
+
+  output$popgenDlPcaScores <- downloadHandler(
+    filename = function() "pca_scores.csv",
+    content  = function(file) {
+      req(popgen.pca.final())
+      write.csv(popgen.pca.final(), file, row.names = FALSE)
     }
   )
 

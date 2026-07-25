@@ -618,7 +618,22 @@ shinyUI(
                  ),
                  tabPanel(
                    h5("PCA / Projection"),
-                   fluidRow(column(12, p("Coming soon.")))
+                   fluidRow(
+                     column(4,
+                            radioButtons("popgenDataSource_pca", "Data source:",
+                                         c("Raw" = "raw", "Filtered" = "filtered"),
+                                         selected = "raw")
+                     )
+                   ),
+                   fluidRow(column(12, h4("Phase 1 — Explore"))),
+                   fluidRow(
+                     column(2, actionButton("popgenPcaExploreBtn", "Explore (K = 10)"))
+                   ),
+                   fluidRow(column(10, plotOutput("popgenPcaScreeplot", height = "auto"))),
+                   uiOutput("popgenPcaPhase2"),
+                   fluidRow(
+                     div(style = "padding: 20px; border-bottom: 8px solid white; background: white")
+                   )
                  ),
                  tabPanel(
                    h5("Outlier scan"),
