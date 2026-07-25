@@ -4049,7 +4049,12 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
     ggplot(df, aes(x = locus, y = richness, fill = group)) +
       geom_col(position = "dodge") +
       theme_bw() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       xlab("Locus") + ylab("Rarefied allelic richness")
+  }, height = function() {
+    fs <- PopGenetics.fstats.richness()
+    n.loci <- if (is.null(fs)) 5 else nrow(fs$basic$perloc)
+    max(400, 20 * n.loci)
   })
 
   output$popgenDlPerloc <- downloadHandler(
@@ -4121,7 +4126,7 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
       geom_point(color = "firebrick") +
       theme_bw() +
       xlab("PC") + ylab("% variance explained")
-  })
+  }, height = 400)
 
   output$popgenPcaPhase2 <- renderUI({
     req(popgen.pca.explore())
@@ -4134,9 +4139,15 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
         column(2, actionButton("popgenPcaRunBtn", "Run final PCA")),
         column(2, downloadButton("popgenDlPcaScores", "Download CSV"))
       ),
-      fluidRow(column(12, plotOutput("popgenPcaPlot12", height = "auto"))),
-      fluidRow(column(12, plotOutput("popgenPcaPlot13", height = "auto"))),
-      fluidRow(column(12, plotOutput("popgenPcaPlot23", height = "auto")))
+      # Fixed pixel heights, not "auto": these plotOutputs are created
+      # dynamically (this whole block only exists after Explore is
+      # clicked), and an "auto" height paired with a server-side height
+      # function is unreliable for elements not present in the DOM at
+      # initial page load — it produced "figure margins too large"
+      # errors here in practice.
+      fluidRow(column(12, plotOutput("popgenPcaPlot12", height = "400px"))),
+      fluidRow(column(12, plotOutput("popgenPcaPlot13", height = "400px"))),
+      fluidRow(column(12, plotOutput("popgenPcaPlot23", height = "400px")))
     )
   })
 
@@ -4165,15 +4176,15 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
   output$popgenPcaPlot12 <- renderPlot({
     req(popgen.pca.final())
     popgen_pca_score_plot(popgen.pca.final(), "PC1", "PC2")
-  })
+  }, height = 400)
   output$popgenPcaPlot13 <- renderPlot({
     req(popgen.pca.final())
     popgen_pca_score_plot(popgen.pca.final(), "PC1", "PC3")
-  })
+  }, height = 400)
   output$popgenPcaPlot23 <- renderPlot({
     req(popgen.pca.final())
     popgen_pca_score_plot(popgen.pca.final(), "PC2", "PC3")
-  })
+  }, height = 400)
 
   output$popgenDlPcaScores <- downloadHandler(
     filename = function() "pca_scores.csv",
@@ -4219,7 +4230,7 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
       geom_point(color = "firebrick") +
       theme_bw() +
       xlab("PC") + ylab("% variance explained")
-  })
+  }, height = 400)
 
   output$popgenPcadaptPhase2 <- renderUI({
     req(popgen.pcadapt.explore())
@@ -4234,7 +4245,11 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
         column(2, actionButton("popgenPcadaptRunBtn", "Run final scan")),
         column(2, downloadButton("popgenDlPcadaptOutliers", "Download CSV"))
       ),
-      fluidRow(column(12, plotOutput("popgenPcadaptManhattan", height = "auto"))),
+      # Fixed pixel height, not "auto" — see the note above popgenPcaPlot12
+      # in the PCA / Projection section: dynamically-created plotOutputs
+      # need an explicit height, "auto" is unreliable for them.
+      fluidRow(column(12, plotOutput("popgenPcadaptManhattan", height = "400px"))),
+      fluidRow(column(12, div(style = "padding-top: 20px;"))),
       fluidRow(column(12, DT::dataTableOutput("popgenPcadaptOutlierTbl")))
     )
   })
@@ -4276,7 +4291,7 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
     thr <- popgen.pcadapt.threshold()
     if (!is.na(thr)) p <- p + geom_hline(yintercept = -log10(thr), linetype = "dashed")
     p
-  })
+  }, height = 400)
 
   output$popgenPcadaptOutlierTbl <- DT::renderDataTable({
     req(popgen.pcadapt.outliers())
@@ -4306,7 +4321,7 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
       geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "firebrick") +
       theme_bw() +
       xlab("Expected -log10(p)") + ylab("Observed -log10(p)")
-  })
+  }, height = 400)
 
   output$popgenPcadaptPvalhist <- renderPlot({
     req(popgen.pcadapt.outliers())
@@ -4314,6 +4329,6 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
       geom_histogram(bins = 30, fill = "steelblue", color = "white") +
       theme_bw() +
       xlab("p-value") + ylab("Count")
-  })
+  }, height = 400)
 
 })

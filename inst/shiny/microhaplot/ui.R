@@ -611,6 +611,7 @@ shinyUI(
                      column(10, DT::dataTableOutput("popgenRichnessTbl")),
                      column(2, downloadButton("popgenDlRichness", "Download CSV"))
                    ),
+                   fluidRow(div(style = "padding-top: 20px;")),
                    fluidRow(column(12, plotOutput("popgenRichnessPlot", height = "auto"))),
                    fluidRow(
                      div(style = "padding: 20px; border-bottom: 8px solid white; background: white")
@@ -650,6 +651,7 @@ shinyUI(
                    ),
                    fluidRow(column(10, plotOutput("popgenPcadaptScreeplot", height = "auto"))),
                    uiOutput("popgenPcadaptPhase2"),
+                   fluidRow(div(style = "padding-top: 20px;")),
                    fluidRow(column(12, h4("Diagnostics"))),
                    fluidRow(column(10, plotOutput("popgenPcadaptQqplot", height = "auto"))),
                    fluidRow(column(10, plotOutput("popgenPcadaptPvalhist", height = "auto"))),
