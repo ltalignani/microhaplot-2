@@ -4020,8 +4020,14 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
       geom_tile() +
       geom_text(aes(label = round(fst, 3))) +
       scale_fill_gradient(low = "white", high = "steelblue", na.value = "grey90") +
+      coord_fixed() +
       theme_bw() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       xlab("") + ylab("")
+  }, height = function() {
+    fs <- PopGenetics.fstats.tab()
+    n.groups <- if (is.null(fs)) 2 else nrow(fs$pairwise_fst)
+    max(400, 120 * n.groups)
   })
 
   output$popgenBetasTbl <- DT::renderDataTable({
