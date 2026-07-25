@@ -637,7 +637,25 @@ shinyUI(
                  ),
                  tabPanel(
                    h5("Outlier scan"),
-                   fluidRow(column(12, p("Coming soon.")))
+                   fluidRow(
+                     column(4,
+                            radioButtons("popgenDataSource_outlier", "Data source:",
+                                         c("Raw" = "raw", "Filtered" = "filtered"),
+                                         selected = "raw")
+                     )
+                   ),
+                   fluidRow(column(12, h4("Phase 1 — Explore"))),
+                   fluidRow(
+                     column(2, actionButton("popgenPcadaptExploreBtn", "Explore (K = 10)"))
+                   ),
+                   fluidRow(column(10, plotOutput("popgenPcadaptScreeplot", height = "auto"))),
+                   uiOutput("popgenPcadaptPhase2"),
+                   fluidRow(column(12, h4("Diagnostics"))),
+                   fluidRow(column(10, plotOutput("popgenPcadaptQqplot", height = "auto"))),
+                   fluidRow(column(10, plotOutput("popgenPcadaptPvalhist", height = "auto"))),
+                   fluidRow(
+                     div(style = "padding: 20px; border-bottom: 8px solid white; background: white")
+                   )
                  )
       ),
       # tabPanel(

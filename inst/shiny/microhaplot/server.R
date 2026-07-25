@@ -4177,4 +4177,137 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
     }
   )
 
+  # ---- Outlier scan ---------------------------------------------------------
+
+  PopGenetics.pcadapt.onehot <- reactive({
+    d <- popgen_active_data(input$popgenDataSource_outlier)
+    if (is.null(d)) return(NULL)
+    encode_onehot(d)
+  })
+
+  popgen.pcadapt.explore <- reactiveVal(NULL)
+  popgen.pcadapt.final <- reactiveVal(NULL)
+
+  observeEvent(input$popgenDataSource_outlier, {
+    popgen.pcadapt.explore(NULL)
+    popgen.pcadapt.final(NULL)
+  })
+
+  observeEvent(input$popgenPcadaptExploreBtn, {
+    req(PopGenetics.pcadapt.onehot())
+    # suppressWarnings() mirrors microhaplot2's original call here: pcadapt
+    # itself warns routinely (e.g. about K relative to sample/marker count),
+    # not about anything specific to this port.
+    popgen.pcadapt.explore(suppressWarnings(run_pcadapt_scan(PopGenetics.pcadapt.onehot(), K = 10)))
+  })
+
+  output$popgenPcadaptScreeplot <- renderPlot({
+    req(popgen.pcadapt.explore())
+    sv <- popgen.pcadapt.explore()$singular.values
+    pct_var <- 100 * sv^2 / sum(sv^2)
+    df <- data.frame(pc = factor(seq_along(pct_var)), pct_var = pct_var)
+
+    ggplot(df, aes(x = pc, y = pct_var, group = 1)) +
+      geom_col(fill = "steelblue") +
+      geom_line(color = "firebrick") +
+      geom_point(color = "firebrick") +
+      theme_bw() +
+      xlab("PC") + ylab("% variance explained")
+  })
+
+  output$popgenPcadaptPhase2 <- renderUI({
+    req(popgen.pcadapt.explore())
+    tagList(
+      fluidRow(column(12, h4("Phase 2 — Final scan"))),
+      fluidRow(
+        column(4, numericInput("popgenPcadaptK", "K (number of PCs)", value = 3, min = 1, max = 20)),
+        column(4, numericInput("popgenPcadaptAlpha", "Alpha (BH significance level)",
+                                value = 0.05, min = 0, max = 1, step = 0.01))
+      ),
+      fluidRow(
+        column(2, actionButton("popgenPcadaptRunBtn", "Run final scan")),
+        column(2, downloadButton("popgenDlPcadaptOutliers", "Download CSV"))
+      ),
+      fluidRow(column(12, plotOutput("popgenPcadaptManhattan", height = "auto"))),
+      fluidRow(column(12, DT::dataTableOutput("popgenPcadaptOutlierTbl")))
+    )
+  })
+
+  observeEvent(input$popgenPcadaptRunBtn, {
+    req(PopGenetics.pcadapt.onehot())
+    popgen.pcadapt.final(suppressWarnings(run_pcadapt_scan(PopGenetics.pcadapt.onehot(), K = input$popgenPcadaptK)))
+  })
+
+  popgen.pcadapt.locus.names <- reactive({
+    req(popgen.pcadapt.final())
+    locus_names_from_onehot(colnames(PopGenetics.pcadapt.onehot()))
+  })
+
+  popgen.pcadapt.outliers <- reactive({
+    req(popgen.pcadapt.final())
+    get_outliers_bh(popgen.pcadapt.final(), popgen.pcadapt.locus.names(), alpha = input$popgenPcadaptAlpha)
+  })
+
+  popgen.pcadapt.threshold <- reactive({
+    req(popgen.pcadapt.outliers())
+    tbl <- popgen.pcadapt.outliers()
+    sig <- tbl$pvalue[tbl$outlier]
+    if (length(sig) == 0) NA_real_ else max(sig)
+  })
+
+  output$popgenPcadaptManhattan <- renderPlot({
+    req(popgen.pcadapt.outliers())
+    tbl <- popgen.pcadapt.outliers()
+    tbl$idx <- seq_len(nrow(tbl))
+    tbl$neglog10p <- -log10(tbl$pvalue)
+
+    p <- ggplot(tbl, aes(x = idx, y = neglog10p, color = outlier)) +
+      geom_point() +
+      scale_color_manual(values = c(`FALSE` = "grey40", `TRUE` = "firebrick")) +
+      theme_bw() +
+      xlab("Locus") + ylab("-log10(p-value)") + labs(color = "Outlier")
+
+    thr <- popgen.pcadapt.threshold()
+    if (!is.na(thr)) p <- p + geom_hline(yintercept = -log10(thr), linetype = "dashed")
+    p
+  })
+
+  output$popgenPcadaptOutlierTbl <- DT::renderDataTable({
+    req(popgen.pcadapt.outliers())
+    tbl <- popgen.pcadapt.outliers()
+    tbl$pvalue <- signif(tbl$pvalue, 4)
+    tbl$padj <- signif(tbl$padj, 4)
+    tbl
+  })
+
+  output$popgenDlPcadaptOutliers <- downloadHandler(
+    filename = function() "outlier_scan.csv",
+    content  = function(file) {
+      req(popgen.pcadapt.outliers())
+      write.csv(popgen.pcadapt.outliers(), file, row.names = FALSE)
+    }
+  )
+
+  output$popgenPcadaptQqplot <- renderPlot({
+    req(popgen.pcadapt.outliers())
+    pv <- sort(popgen.pcadapt.outliers()$pvalue)
+    n <- length(pv)
+    expected <- -log10(stats::ppoints(n))
+    observed <- -log10(pv)
+
+    ggplot(data.frame(expected = expected, observed = observed), aes(x = expected, y = observed)) +
+      geom_point() +
+      geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "firebrick") +
+      theme_bw() +
+      xlab("Expected -log10(p)") + ylab("Observed -log10(p)")
+  })
+
+  output$popgenPcadaptPvalhist <- renderPlot({
+    req(popgen.pcadapt.outliers())
+    ggplot(popgen.pcadapt.outliers(), aes(x = pvalue)) +
+      geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+      theme_bw() +
+      xlab("p-value") + ylab("Count")
+  })
+
 })
