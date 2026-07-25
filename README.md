@@ -241,6 +241,35 @@ The wizard walks through five steps:
 This app has the same `samtools` requirement as BAM input above, and
 BAM input is likewise not currently supported on Windows.
 
+## Troubleshooting
+
+### Run microhaplot in your browser, not RStudio's Viewer pane
+
+If you're using RStudio Desktop, launch microhaplot so it opens in your
+default web browser instead of RStudio's built-in Viewer pane:
+
+``` r
+library(microhaplot)
+options(shiny.launch.browser = TRUE)
+runShinyHaplot("~/Shiny/microhaplot")
+```
+
+RStudio's Viewer pane doesn't always recycle graphics devices cleanly
+between plot renders, which can eventually surface as a
+`too many open devices` error — more likely to show up in tabs with a lot
+of plots, such as **Population Genetics**. Running in an external browser
+avoids this.
+
+### "too many open devices" error
+
+If you hit this error anyway (for example, after a long session with a
+lot of navigation between tabs), close every open graphics device and
+try again:
+
+``` r
+while (!is.null(dev.list())) dev.off()
+```
+
 ## Suggestions
 
   - SAM/BAM files: For pair-ended experiment, both directional reads
