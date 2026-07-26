@@ -4,13 +4,18 @@
 \alias{run_pcadapt_scan}
 \title{Run a pcadapt scan on a one-hot dosage matrix.}
 \usage{
-run_pcadapt_scan(onehot_matrix, K)
+run_pcadapt_scan(onehot_matrix, K, min.maf = 0.05)
 }
 \arguments{
 \item{onehot_matrix}{numeric matrix (individuals x locus__haplo columns),
 as returned by encode_onehot().}
 
 \item{K}{integer. Number of principal components to use.}
+
+\item{min.maf}{numeric. Minor-allele-frequency threshold, passed through
+to pcadapt::pcadapt() and used to pre-compute the effective column
+count for capping K. Must match pcadapt's own default/argument so the
+cap reflects what pcadapt will actually do.}
 }
 \value{
 a pcadapt result object (see pcadapt::pcadapt()).
@@ -18,4 +23,15 @@ a pcadapt result object (see pcadapt::pcadapt()).
 \description{
 Wraps pcadapt::read.pcadapt(type = "lfmm") + pcadapt::pcadapt(). Returns
 the pcadapt result object, which carries one pvalue per matrix column.
+}
+\details{
+pcadapt internally drops columns below its own minor-allele-frequency
+threshold (min.maf, default 0.05) before computing its partial SVD, and
+requires K to be strictly less than the number of columns that survive
+that filter. microhaplot's one-hot columns are frequently rare
+haplotype/locus combinations, so that survivor count can be much smaller
+than ncol(onehot_matrix) — asking for more components than that leaves
+pcadapt with a generic, misleading "Can't compute SVD" error. K is
+capped defensively here to the same MAF-based count pcadapt computes
+internally, so the scan degrades gracefully instead of crashing.
 }

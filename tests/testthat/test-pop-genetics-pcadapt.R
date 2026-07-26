@@ -21,6 +21,47 @@ test_that("run_pcadapt_scan returns pcadapt result with one pvalue per column", 
   expect_equal(length(res$pvalues), ncol(m))
 })
 
+# ---- Cycle 1b: run_pcadapt_scan caps K to the MAF-passing column count -----
+# pcadapt drops columns below min.maf before computing its partial SVD and
+# errors ("Can't compute SVD...") if K isn't strictly less than the number
+# of surviving columns. Build a matrix where only 3 columns pass the
+# default min.maf = 0.05 filter (the rest are near-singleton "rare
+# haplotype" columns, as real microhaplot one-hot matrices often have) and
+# request K = 10: this used to crash before the cap was added.
+
+make_maf_pathological_onehot <- function() {
+  set.seed(1)
+  n <- 30
+  p_rare <- 20
+  p_common <- 3
+  m <- matrix(0, nrow = n, ncol = p_rare + p_common)
+  for (j in seq_len(p_rare)) {
+    m[sample(n, 1), j] <- 1
+  }
+  for (j in (p_rare + 1):(p_rare + p_common)) {
+    m[, j] <- sample(0:2, n, replace = TRUE)
+  }
+  colnames(m) <- paste0("L", seq_len(ncol(m)), "__A")
+  rownames(m) <- paste0("i", seq_len(n))
+  storage.mode(m) <- "double"
+  m
+}
+
+test_that("run_pcadapt_scan caps K below the requested value instead of erroring when few columns pass min.maf", {
+  m <- make_maf_pathological_onehot()
+
+  expect_no_error(suppressWarnings(run_pcadapt_scan(m, K = 10)))
+})
+
+test_that("run_pcadapt_scan errors clearly when fewer than 2 columns pass min.maf", {
+  m <- matrix(0, nrow = 100, ncol = 5)
+  m[1, ] <- 1 # every column has af = 1/200 = 0.005, well below min.maf = 0.05
+  colnames(m) <- paste0("L", 1:5, "__A")
+  storage.mode(m) <- "double"
+
+  expect_error(run_pcadapt_scan(m, K = 2), "min.maf")
+})
+
 # ---- Cycle 2: locus_names_from_onehot strips everything after "__" ----------
 
 test_that("locus_names_from_onehot strips the __haplo suffix", {

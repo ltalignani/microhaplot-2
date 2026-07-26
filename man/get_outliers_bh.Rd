@@ -19,5 +19,9 @@ data.frame with columns locus, pvalue, padj, outlier.
 \description{
 `locus_names` has one entry per pcadapt_result$pvalues entry (i.e. per
 one-hot column); loci sharing multiple haplotype columns are reduced to
-their minimum pvalue before BH correction.
+their minimum pvalue before BH correction. pcadapt sets a column's
+pvalue to NA when it fails the `min.maf` filter (common for rare
+haplotype-column variants), so the minimum is taken over the non-NA
+pvalues within a locus; a locus is only NA overall if every one of its
+columns was filtered.
 }

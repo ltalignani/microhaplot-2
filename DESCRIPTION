@@ -32,7 +32,6 @@ Imports:
     pcadapt
 URL: https://github.com/ngthomas/microhaplot
 BugReports: https://github.com/ngthomas/microhaplot/issues
-RoxygenNote: 7.1.1
 Suggests:
     knitr,
     rmarkdown,
@@ -40,3 +39,4 @@ Suggests:
     withr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+RoxygenNote: 7.1.1
