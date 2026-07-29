@@ -42,6 +42,7 @@ bioinformaticien.
 - [Partage des .rds entre les deux conteneurs](issues/09-rds-sharing.md) — le volume partagé EST le `app.path` des deux conteneurs.
 - [Approche serveur Shiny](issues/10-shiny-server-approach.md) — `shiny::runApp()` nu, pas de Shiny Server.
 - [Conception du Dockerfile](issues/11-dockerfile-design.md) — image `rocker/r-ver:4.5.0`, entrypoint unique paramétré par `MICROHAPLOT_APP=main|prep`, `$HOME` du conteneur = point de montage du volume partagé (le chemin `~/Shiny/microhaplot` déjà codé en dur fait tout le travail de partage, aucun changement de code requis).
+- [Conception du docker-compose](issues/12-compose-design.md) — deux services (`main`/`prep`), même image, un seul volume monté sur `/home/appuser` dans les deux, ports hôte 3838/3839, pas de `depends_on`, pas de `restart:` automatique.
 
 ## Not yet specified
 
