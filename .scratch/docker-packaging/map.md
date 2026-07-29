@@ -41,6 +41,7 @@ bioinformaticien.
 - [Priorité plateformes cible](issues/08-platform-priority.md) — Mac (Intel+ARM) et Linux d'abord, multi-arch amd64+arm64.
 - [Partage des .rds entre les deux conteneurs](issues/09-rds-sharing.md) — le volume partagé EST le `app.path` des deux conteneurs.
 - [Approche serveur Shiny](issues/10-shiny-server-approach.md) — `shiny::runApp()` nu, pas de Shiny Server.
+- [Conception du Dockerfile](issues/11-dockerfile-design.md) — image `rocker/r-ver:4.5.0`, entrypoint unique paramétré par `MICROHAPLOT_APP=main|prep`, `$HOME` du conteneur = point de montage du volume partagé (le chemin `~/Shiny/microhaplot` déjà codé en dur fait tout le travail de partage, aucun changement de code requis).
 
 ## Not yet specified
 
