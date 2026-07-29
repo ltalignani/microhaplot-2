@@ -1,0 +1,12 @@
+.git
+.github
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.scratch
+docs
+notes
+*.Rproj
+.DS_Store
+tickets.md
