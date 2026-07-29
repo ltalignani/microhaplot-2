@@ -66,3 +66,9 @@ bioinformaticien.
 - Modification de la logique métier de `prepHaplotFiles()` ou des modules
   Population Genetics — cet effort est strictement du packaging/déploiement,
   pas une évolution fonctionnelle des apps elles-mêmes.
+- [Vérification build multi-arch et smoke test](issues/15-multiarch-smoke-test.md) —
+  demande une vérification réelle (build + run effectifs), pas une décision ;
+  reclassé hors périmètre du wayfinding. Son contenu devient les critères
+  d'acceptation du ticket d'implémentation du Dockerfile/docker-compose lors
+  du passage `/to-spec` → `/to-tickets` → `/implement` — à ne pas perdre en
+  route.
