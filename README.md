@@ -198,6 +198,68 @@ haplo.read.tbl <- prepHaplotFiles(run.label = run.label,
 runShinyHaplot(app.path)
 ```
 
+## Run microhaplot with Docker (recommended for non-bioinformaticians)
+
+If you'd rather not install R, Perl, or samtools yourself, both the main
+microhaplot app and the field genotyping prep wizard are available as a
+single Docker image — no R console, no package installation.
+
+### Prerequisites
+
+Install Docker Desktop for your OS:
+
+- [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/) (Intel and Apple Silicon)
+- [Docker Desktop for Linux](https://www.docker.com/products/docker-desktop/)
+
+This first release targets Mac and Linux. It will likely also work on
+Windows via Docker Desktop + WSL2, but that hasn't been tested yet.
+
+### One-time setup
+
+Download `docker-compose.yml` from this repo (no need to clone it):
+
+``` sh
+curl -O https://raw.githubusercontent.com/ltalignani/microhaplot-2/master/docker-compose.yml
+```
+
+Create a folder on your machine where you'll drop your BAM/VCF/TSV files
+and where the generated `.rds` files will appear:
+
+``` sh
+mkdir -p ./microhaplot-data
+```
+
+### Launch
+
+``` sh
+docker compose up
+```
+
+Then open:
+
+- the field genotyping prep wizard at <http://localhost:3839>
+- the main microhaplot app at <http://localhost:3838>
+
+Both apps share the same `./microhaplot-data` folder — files you extract
+in the prep wizard show up immediately in the main app, no copying, no
+restart.
+
+### A note for Windows and BAM files
+
+The main package currently doesn't support BAM input directly on Windows
+(only SAM). Running through Docker sidesteps this entirely: the
+container is always Linux inside, regardless of your host OS, so BAM
+input works the same way on Windows-via-Docker as it does on Mac or
+Linux.
+
+### Stopping
+
+``` sh
+docker compose down
+```
+
+Your data stays in `./microhaplot-data` between runs.
+
 ## Field Genotyping Prep app (guided alternative to `prepHaplotFiles`)
 
 If you'd rather not call `prepHaplotFiles` from the R console yourself —
@@ -269,6 +331,32 @@ try again:
 ``` r
 while (!is.null(dev.list())) dev.off()
 ```
+
+### Docker: "permission denied" writing to `./microhaplot-data`
+
+The containers run as a non-root user (UID/GID `1000:1000` by default) so
+they can write into your mounted data folder without needing `root`
+inside the container. On most Linux distributions this matches the
+first regular user account, so it works out of the box — but if your
+own UID/GID differ (check with `id -u` and `id -g`), or you're on a
+platform where they don't line up automatically, downloads and
+extractions into `./microhaplot-data` may fail with a permissions error.
+
+Fix it by pointing the containers at your actual UID/GID via a `.env`
+file placed next to `docker-compose.yml`:
+
+``` sh
+cat <<EOF > .env
+MICROHAPLOT_UID=$(id -u)
+MICROHAPLOT_GID=$(id -g)
+EOF
+```
+
+The same `.env` file also lets you override the shared data folder
+(`MICROHAPLOT_DATA_DIR`, default `./microhaplot-data`), the host ports
+(`MICROHAPLOT_MAIN_PORT`/`MICROHAPLOT_PREP_PORT`, default `3838`/`3839`),
+and the image version (`MICROHAPLOT_VERSION`, default `latest`) —
+none of `docker-compose.yml` itself needs editing.
 
 ## Suggestions
 
