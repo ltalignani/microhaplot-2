@@ -24,8 +24,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN Rscript -e 'install.packages("remotes", repos = "https://cloud.r-project.org")'
 
+# Install the dependencies from DESCRIPTION alone, before copying the source.
+# Docker keys its layer cache on the build context, so copying the whole repo
+# first would make any edit to any file — a script, the README, .dockerignore —
+# recompile the entire dependency tree (ggiraph's C++ chain, pcadapt, RSpectra:
+# ~20 minutes). Split this way, that only happens when DESCRIPTION changes.
+COPY DESCRIPTION /tmp/microhaplot-deps/DESCRIPTION
+RUN Rscript -e 'remotes::install_deps("/tmp/microhaplot-deps", dependencies = TRUE, repos = "https://cloud.r-project.org")' \
+  && rm -rf /tmp/microhaplot-deps
+
 COPY . /tmp/microhaplot-src
-RUN Rscript -e 'remotes::install_deps("/tmp/microhaplot-src", dependencies = TRUE, repos = "https://cloud.r-project.org")'
 RUN R CMD INSTALL /tmp/microhaplot-src \
   && rm -rf /tmp/microhaplot-src
 
