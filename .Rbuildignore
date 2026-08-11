@@ -14,3 +14,10 @@
 ^pkgdown$
 ^\.github$
 ^README.Rmd
+^\.claude$
+^\.scratch$
+^scripts$
+^Dockerfile$
+^docker-compose\.yml$
+^docker-entrypoint\.sh$
+^\.dockerignore$
