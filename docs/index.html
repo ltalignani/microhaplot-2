@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">microhaplot</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.3</span>
       </span>
     </div>
 
@@ -135,9 +135,16 @@
 <p>Both apps share the same <code>./microhaplot-data</code> folder — files you extract in the prep wizard show up immediately in the main app, no copying, no restart.</p>
 </div>
 <div class="section level3">
+<h3 id="alignments-that-live-elsewhere">Alignments that live elsewhere<a class="anchor" aria-label="anchor" href="#alignments-that-live-elsewhere"></a>
+</h3>
+<p>The containers can only see what you mount, so BAM files outside <code>./microhaplot-data</code> won’t appear in the prep wizard’s folder browser. Rather than copying them, point <code>MICROHAPLOT_INPUT_DIR</code> at the folder and it is mounted read-only as <code>input</code> inside the shared folder:</p>
+<pre class="sourceCode sh" id="cb4"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="va">MICROHAPLOT_INPUT_DIR=</span>/path/to/my/bam/folder <span class="ex">docker</span> compose up</a></code></pre>
+<p>The same variable can go in a <code>.env</code> file next to <code>docker-compose.yml</code>.</p>
+</div>
+<div class="section level3">
 <h3 id="stopping">Stopping<a class="anchor" aria-label="anchor" href="#stopping"></a>
 </h3>
-<pre class="sourceCode sh" id="cb4"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="ex">docker</span> compose down</a></code></pre>
+<pre class="sourceCode sh" id="cb5"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="ex">docker</span> compose down</a></code></pre>
 <p>Your data stays in <code>./microhaplot-data</code> between runs.</p>
 </div>
 <div class="section level3">
@@ -223,7 +230,7 @@ s11.sam s11     copper
 s13.bam s13     gold</code></pre>
 <p>Then run <code>prepHaplotFiles</code>, giving it a run label, the directory holding your alignment files, the label file, the VCF, and optionally a number of threads (non-Windows only):</p>
 <pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ltalignani/microhaplot-2" class="external-link">microhaplot</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ngthomas/microhaplot" class="external-link">microhaplot</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># to access package sample case study dataset of rockfish</span></span>
 <span><span class="va">run.label</span> <span class="op">&lt;-</span> <span class="st">"sebastes"</span></span>
@@ -271,10 +278,10 @@ s13.bam s13     gold</code></pre>
 </h3>
 <p>The containers run as a non-root user (UID/GID <code>1000:1000</code> by default) so they can write into your mounted data folder without needing <code>root</code> inside the container. On most Linux distributions this matches the first regular user account, so it works out of the box — but if your own UID/GID differ (check with <code>id -u</code> and <code>id -g</code>), or you’re on a platform where they don’t line up automatically, downloads and extractions into <code>./microhaplot-data</code> may fail with a permissions error.</p>
 <p>Fix it by pointing the containers at your actual UID/GID via a <code>.env</code> file placed next to <code>docker-compose.yml</code>:</p>
-<pre class="sourceCode sh" id="cb12"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="fu">cat</span> <span class="op">&lt;&lt;EOF</span> <span class="op">&gt;</span> <span class="ex">.env</span></a>
-<a class="sourceLine" id="cb12-2" data-line-number="2">MICROHAPLOT_UID=<span class="va">$(</span><span class="fu">id</span> -u<span class="va">)</span></a>
-<a class="sourceLine" id="cb12-3" data-line-number="3">MICROHAPLOT_GID=<span class="va">$(</span><span class="fu">id</span> -g<span class="va">)</span></a>
-<a class="sourceLine" id="cb12-4" data-line-number="4">EOF</a></code></pre>
+<pre class="sourceCode sh" id="cb13"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="fu">cat</span> <span class="op">&lt;&lt;EOF</span> <span class="op">&gt;</span> <span class="ex">.env</span></a>
+<a class="sourceLine" id="cb13-2" data-line-number="2">MICROHAPLOT_UID=<span class="va">$(</span><span class="fu">id</span> -u<span class="va">)</span></a>
+<a class="sourceLine" id="cb13-3" data-line-number="3">MICROHAPLOT_GID=<span class="va">$(</span><span class="fu">id</span> -g<span class="va">)</span></a>
+<a class="sourceLine" id="cb13-4" data-line-number="4">EOF</a></code></pre>
 <p>The same <code>.env</code> file also lets you override the shared data folder (<code>MICROHAPLOT_DATA_DIR</code>, default <code>./microhaplot-data</code>), the host ports (<code>MICROHAPLOT_MAIN_PORT</code>/<code>MICROHAPLOT_PREP_PORT</code>, default <code>3838</code>/<code>3839</code>), and the image version (<code>MICROHAPLOT_VERSION</code>, default <code>latest</code>) — none of <code>docker-compose.yml</code> itself needs editing.</p>
 </div>
 <div class="section level3">
@@ -282,7 +289,7 @@ s13.bam s13     gold</code></pre>
 </h3>
 <p>This applies to the R installation route only. If you’re using RStudio Desktop, launch microhaplot so it opens in your default web browser instead of RStudio’s built-in Viewer pane:</p>
 <pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ltalignani/microhaplot-2" class="external-link">microhaplot</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ngthomas/microhaplot" class="external-link">microhaplot</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>shiny.launch.browser <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/runShinyHaplot.html">runShinyHaplot</a></span><span class="op">(</span><span class="st">"~/Shiny/microhaplot"</span><span class="op">)</span></span></code></pre>
 <p>RStudio’s Viewer pane doesn’t always recycle graphics devices cleanly between plot renders, which can eventually surface as a <code>too many open devices</code> error — more likely to show up in tabs with a lot of plots, such as <strong>Population Genetics</strong>. Running in an external browser avoids this.</p>

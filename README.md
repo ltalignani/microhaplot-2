@@ -90,6 +90,19 @@ Both apps share the same `./microhaplot-data` folder — files you extract
 in the prep wizard show up immediately in the main app, no copying, no
 restart.
 
+### Alignments that live elsewhere
+
+The containers can only see what you mount, so BAM files outside
+`./microhaplot-data` won't appear in the prep wizard's folder browser.
+Rather than copying them, point `MICROHAPLOT_INPUT_DIR` at the folder and
+it is mounted read-only as `input` inside the shared folder:
+
+``` sh
+MICROHAPLOT_INPUT_DIR=/path/to/my/bam/folder docker compose up
+```
+
+The same variable can go in a `.env` file next to `docker-compose.yml`.
+
 ### Stopping
 
 ``` sh

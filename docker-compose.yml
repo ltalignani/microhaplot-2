@@ -5,6 +5,13 @@ services:
       MICROHAPLOT_APP: main
     volumes:
       - ${MICROHAPLOT_DATA_DIR:-./microhaplot-data}:/home/appuser
+      # Read-only view of a folder of alignments living anywhere else on the
+      # host. The wizard's folder browser is rooted at the container's home
+      # directory, so data outside it is simply invisible; mounting it here
+      # makes it show up as "input" without copying anything. The default is
+      # the same path it would already resolve to, so leaving
+      # MICROHAPLOT_INPUT_DIR unset changes nothing.
+      - ${MICROHAPLOT_INPUT_DIR:-./microhaplot-data/input}:/home/appuser/input:ro
     ports:
       - "${MICROHAPLOT_MAIN_PORT:-3838}:3838"
     user: "${MICROHAPLOT_UID:-1000}:${MICROHAPLOT_GID:-1000}"
@@ -15,6 +22,7 @@ services:
       MICROHAPLOT_APP: prep
     volumes:
       - ${MICROHAPLOT_DATA_DIR:-./microhaplot-data}:/home/appuser
+      - ${MICROHAPLOT_INPUT_DIR:-./microhaplot-data/input}:/home/appuser/input:ro
     ports:
       - "${MICROHAPLOT_PREP_PORT:-3839}:3838"
     user: "${MICROHAPLOT_UID:-1000}:${MICROHAPLOT_GID:-1000}"

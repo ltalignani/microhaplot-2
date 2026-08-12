@@ -69,6 +69,24 @@ Using a subfolder per run, rather than the folder root, keeps your data
 separate from the `Shiny/` directory the apps create there for their own
 use.
 
+### If your alignments live somewhere else
+
+A container can only see what you give it, so BAM files sitting elsewhere on
+your machine are invisible to the wizard — and copying a few hundred
+gigabytes of alignments into `./microhaplot-data` is not a reasonable answer.
+
+Point `MICROHAPLOT_INPUT_DIR` at the folder instead and it is mounted, **read
+only**, as `input` inside the shared folder:
+
+```{sh input-dir, eval = FALSE}
+MICROHAPLOT_INPUT_DIR=/path/to/my/bam/folder docker compose up
+```
+
+Or, to avoid retyping it, put the same line in a `.env` file next to
+`docker-compose.yml`. In the wizard, the folder is then at `home` → `input`.
+Nothing is copied, and nothing in it can be modified: microhaplot only ever
+reads your alignments, and writes its output to `~/Shiny/microhaplot`.
+
 If you just want to follow along, `microhaplot` bundles a demo dataset of
 20 rockfish samples — 20 BAM files, a VCF, and a ready-made metadata TSV.
 Unpack it with:
@@ -139,7 +157,8 @@ You can go back at any point before extraction starts.
 <img src="prep-01-select-folder.png" title="Wizard step 1: select folder" width="100%" />
 
 Click **Browse for folder…** and pick the folder holding your BAM files —
-`sebastes-demo` if you're using the demo data.
+`sebastes-demo` if you're using the demo data, or `input` if you mounted
+your own folder with `MICROHAPLOT_INPUT_DIR` above.
 
 <img src="prep-01b-folder-picker.png" title="Wizard step 1: the folder picker, rooted at the shared volume" width="100%" />
 
