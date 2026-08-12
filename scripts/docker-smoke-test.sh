@@ -84,6 +84,12 @@ for port in "$MICROHAPLOT_MAIN_PORT" "$MICROHAPLOT_PREP_PORT"; do
   done
 done
 
+# Step 3 only proves Shiny served a page. The server function does not run
+# until a browser opens a websocket, so an app that dies on its first line
+# still answers 200 — see scripts/smoke/app-loads.R.
+step "3b/5 Checking the Shiny app's own code loads in the image"
+docker compose exec -T main Rscript - < scripts/smoke/app-loads.R
+
 step "4/5 Running a real BAM+VCF extraction in the prep service"
 docker compose exec -T -e SMOKE_RUN_LABEL="$SMOKE_RUN_LABEL" prep \
   bash -s < scripts/smoke/prep-extraction.sh

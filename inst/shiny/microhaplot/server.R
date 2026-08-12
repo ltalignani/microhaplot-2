@@ -1,6 +1,14 @@
 library("shiny")
 library("shinyBS")
-library("tidyverse")
+# The three tidyverse members this app actually attaches. It used to load
+# the tidyverse meta-package, which is not a declared dependency of
+# microhaplot and so is absent from any clean installation — the Docker
+# image included, where the server session died on startup and left the
+# Data Set dropdown empty. Everything else it uses from that family is
+# already namespaced (tibble::as_tibble).
+library("dplyr")
+library("tidyr")
+library("ggplot2")
 library("DT")
 library("grid")
 library("scales")

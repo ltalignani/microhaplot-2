@@ -1,7 +1,7 @@
 Package: microhaplot
 Type: Package
 Title: Microhaplotype Constructor and Visualizer
-Version: 1.0.3
+Version: 1.0.4
 Authors@R: c(
     person("Thomas", "Ng", email = "tngthomasng@gmail.com", role = "aut",
            comment = "Original author of microhaplot"),
