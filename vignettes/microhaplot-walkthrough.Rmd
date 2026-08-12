@@ -21,22 +21,58 @@ Each data set consists of microhaplotypes derived from
 amplicon sequencing of a marine species, and they represent subsets of
 data that have been previously employed in full analyses.
 
-The data that we will be exploring will be available
-after installation of the R package and the Shiny app. Once the R package
-`microhaplot` is installed, the Shiny app can be installed like this:
+# Starting the app
+
+There are two ways to get the viewer in front of you. Pick whichever
+matches how you installed microhaplot; everything after this section is
+identical either way.
+
+## With Docker
+
+There is nothing to install and nothing to launch: `docker compose up`
+already started the viewer, and it is waiting at
+<http://localhost:3838>. If it isn't running, start it from the folder
+holding your `docker-compose.yml`:
+
+```{sh compose-up, eval = FALSE}
+docker compose up
+```
+
+The **Data Set** dropdown lists every dataset in your shared
+`./microhaplot-data` folder. `fish1.rds` and `fish2.rds` are there from the
+start, and any run you extract with the Field Genotyping Prep wizard joins
+them immediately, without restarting anything — see the *Extracting
+haplotypes with Docker* vignette for that half of the workflow.
+
+To bring in a dataset you already have, drop both its `.rds` and its
+`_posinfo.rds` into `./microhaplot-data/Shiny/microhaplot/` and reload the
+page.
+
+One consequence worth knowing: the filtering criteria and locus annotations
+you set are saved next to the data, inside that same shared folder, so they
+survive `docker compose down` and are still there when you next start up.
+
+## From R
+
+Install the Shiny app somewhere on your disk, replacing `tempdir()` with a
+location you want to keep:
+
 ```r
 # provide a directory path to host the microhaplot Shiny app
 shiny_dir <- tempdir()
 microhaplot::mvShinyHaplot(shiny_dir)
-``` 
-where `tempdir()` should be replaced by a location on your hard drive where 
-you want the Shiny app installed. 
+```
 
-Once it is installed, the Shiny app is run like this:
+Then run it:
+
 ```r
 app.path <- file.path(shiny_dir, "microhaplot")
 microhaplot::runShinyHaplot(app.path)
 ```
+
+If you are using RStudio, see the Troubleshooting section of the README for
+why it is worth launching this in a real browser rather than the Viewer
+pane.
 
 # About the example data
 The data set in `fish1.rds` contains microhaplotypes from 22 amplicons in 436 

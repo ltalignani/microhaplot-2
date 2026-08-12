@@ -243,11 +243,14 @@ overwrite each other. On your own machine these files are under
 
 ## Opening the result in the main app
 
-Now go to <http://localhost:3838>. The **Data Set** dropdown lists every
-dataset present in the shared folder: the bundled `fish1.rds` and
-`fish2.rds` examples, plus your own `prep_<timestamp>.rds` runs. Pick
-yours and carry on with the *microhaplot walkthrough* vignette, which
-covers filtering, genotype calling, and population genetics.
+Now go to <http://localhost:3838>. That app has been running alongside the
+wizard since `docker compose up` — there is nothing further to start. The
+**Data Set** dropdown lists every dataset present in the shared folder: the
+bundled `fish1.rds` and `fish2.rds` examples, plus your own
+`prep_<timestamp>.rds` runs. Pick yours and carry on with the *microhaplot
+walkthrough* vignette, whose "Starting the app" section covers the Docker
+side in more detail before moving on to filtering, genotype calling, and
+population genetics.
 
 You do not need to restart anything. The main app reads the same directory
 the wizard just wrote to, so a dataset extracted a moment ago is already

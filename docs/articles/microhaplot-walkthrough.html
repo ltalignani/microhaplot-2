@@ -99,16 +99,34 @@
     
     
 <p><code>microhaplot</code> comes pre-loaded with two small, real, example data sets, <code>fish1.rds</code> and <code>fish2.rds</code>, to get you started learning about its functionality. This vignette will walk you through the process of viewing these example data sets and will introduce you to many of the features of <code>microhaplot</code>. Each data set consists of microhaplotypes derived from amplicon sequencing of a marine species, and they represent subsets of data that have been previously employed in full analyses.</p>
-<p>The data that we will be exploring will be available after installation of the R package and the Shiny app. Once the R package <code>microhaplot</code> is installed, the Shiny app can be installed like this:</p>
+<div class="section level2">
+<h2 id="starting-the-app">Starting the app<a class="anchor" aria-label="anchor" href="#starting-the-app"></a>
+</h2>
+<p>There are two ways to get the viewer in front of you. Pick whichever matches how you installed microhaplot; everything after this section is identical either way.</p>
+<div class="section level3">
+<h3 id="with-docker">With Docker<a class="anchor" aria-label="anchor" href="#with-docker"></a>
+</h3>
+<p>There is nothing to install and nothing to launch: <code>docker compose up</code> already started the viewer, and it is waiting at <a href="http://localhost:3838" class="external-link uri">http://localhost:3838</a>. If it isn’t running, start it from the folder holding your <code>docker-compose.yml</code>:</p>
+<pre class="sourceCode sh" id="cb1"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="ex">docker</span> compose up</a></code></pre>
+<p>The <strong>Data Set</strong> dropdown lists every dataset in your shared <code>./microhaplot-data</code> folder. <code>fish1.rds</code> and <code>fish2.rds</code> are there from the start, and any run you extract with the Field Genotyping Prep wizard joins them immediately, without restarting anything — see the <em>Extracting haplotypes with Docker</em> vignette for that half of the workflow.</p>
+<p>To bring in a dataset you already have, drop both its <code>.rds</code> and its <code>_posinfo.rds</code> into <code>./microhaplot-data/Shiny/microhaplot/</code> and reload the page.</p>
+<p>One consequence worth knowing: the filtering criteria and locus annotations you set are saved next to the data, inside that same shared folder, so they survive <code>docker compose down</code> and are still there when you next start up.</p>
+</div>
+<div class="section level3">
+<h3 id="from-r">From R<a class="anchor" aria-label="anchor" href="#from-r"></a>
+</h3>
+<p>Install the Shiny app somewhere on your disk, replacing <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code> with a location you want to keep:</p>
 <pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># provide a directory path to host the microhaplot Shiny app</span></span>
 <span><span class="va">shiny_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">microhaplot</span><span class="fu">::</span><span class="fu"><a href="../reference/mvShinyHaplot.html">mvShinyHaplot</a></span><span class="op">(</span><span class="va">shiny_dir</span><span class="op">)</span></span></code></pre>
-<p>where <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code> should be replaced by a location on your hard drive where you want the Shiny app installed.</p>
-<p>Once it is installed, the Shiny app is run like this:</p>
+<p>Then run it:</p>
 <pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">app.path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">shiny_dir</span>, <span class="st">"microhaplot"</span><span class="op">)</span></span>
 <span><span class="fu">microhaplot</span><span class="fu">::</span><span class="fu"><a href="../reference/runShinyHaplot.html">runShinyHaplot</a></span><span class="op">(</span><span class="va">app.path</span><span class="op">)</span></span></code></pre>
+<p>If you are using RStudio, see the Troubleshooting section of the README for why it is worth launching this in a real browser rather than the Viewer pane.</p>
+</div>
+</div>
 <div class="section level2">
 <h2 id="about-the-example-data">About the example data<a class="anchor" aria-label="anchor" href="#about-the-example-data"></a>
 </h2>
