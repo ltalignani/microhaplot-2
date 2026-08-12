@@ -20,3 +20,5 @@
 ^docker-compose\.yml$
 ^docker-entrypoint\.sh$
 ^\.dockerignore$
+^CLAUDE\.md$
+^docs/agents$
