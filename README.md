@@ -7,6 +7,14 @@
 status](https://www.r-pkg.org/badges/version/microhaplot)](https://CRAN.R-project.org/package=microhaplot)
 <!-- badges: end -->
 
+> **This is microhaplot 2**, an extended fork of
+> [ngthomas/microhaplot](https://github.com/ngthomas/microhaplot) maintained
+> by Loïc Talignani (IRD). On top of the original package it adds a
+> **Population Genetics** module (F-statistics, allelic diversity, PCA,
+> outlier detection), a **Field Genotyping Prep** app that wraps the
+> extraction behind a guided wizard, **BAM input** support, and a **Docker**
+> distribution that requires no local R installation.
+
 `microhaplot` generates visual summaries of microhaplotypes found in
 short read alignments. All you need are alignment SAM or BAM files and a
 variant call VCF file. (The latter tells `microhaplot` which SNPs to

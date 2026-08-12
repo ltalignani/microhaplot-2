@@ -1,10 +1,10 @@
 ---
-title: "An Introduction to microhaplot data preparation"
-author: "Thomas Ng and Eric C. Anderson"
+title: "Preparing your data: from reads to BAM and VCF"
+author: "Thomas Ng and Eric C. Anderson; revised by Loïc Talignani"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{microhaplot data prep}
+  %\VignetteIndexEntry{Preparing your data: from reads to BAM and VCF}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

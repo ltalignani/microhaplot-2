@@ -1,6 +1,6 @@
 ---
 title: "microhaplot walkthrough"
-author: "Thomas Ng and Eric C. Anderson"
+author: "Thomas Ng and Eric C. Anderson; Population Genetics section by Loïc Talignani"
 date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
