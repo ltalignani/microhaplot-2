@@ -90,7 +90,7 @@
 <div class="page-header"><h1 id="microhaplot">microhaplot <img src="https://i.ibb.co/68M0tpT/microhaplot-logo.png" align="right" width="200"><a class="anchor" aria-label="anchor" href="#microhaplot"></a>
 </h1></div>
 <!-- badges: start -->
-<blockquote><p><strong>This is microhaplot 2</strong>, an extended fork of <a href="https://github.com/ngthomas/microhaplot" class="external-link">ngthomas/microhaplot</a> maintained by Loïc Talignani (IRD). On top of the original package it adds a <strong>Population Genetics</strong> module (F-statistics, allelic diversity, PCA, outlier detection), a <strong>Field Genotyping Prep</strong> app that wraps the extraction behind a guided wizard, <strong>BAM input</strong> support, and a <strong>Docker</strong> distribution that requires no local R installation.</p></blockquote>
+<blockquote><p><strong>This is microhaplot 2</strong>, an extended fork of <a href="https://github.com/ngthomas/microhaplot" class="external-link">ngthomas/microhaplot</a> maintained by Loïc Talignani (Université de Montpellier). On top of the original package it adds a <strong>Population Genetics</strong> module (F-statistics, allelic diversity, PCA, outlier detection), a <strong>Field Genotyping Prep</strong> app that wraps the extraction behind a guided wizard, <strong>BAM input</strong> support, and a <strong>Docker</strong> distribution that requires no local R installation.</p></blockquote>
 <p><code>microhaplot</code> generates visual summaries of microhaplotypes found in short read alignments. All you need are alignment SAM or BAM files and a variant call VCF file. (The latter tells <code>microhaplot</code> which SNPs to include into microhaplotypes). It was designed for extracting and visualized haplotypes from high-quality amplicon sequencing data. We have used it extensively to process amplicon sequencing data (with 100 to 500 amplicons) from rockfish and Chinook salmon, generated on an Illumina MiSeq sequencer. It should be extensible to sequences from capture arrays, like RAPTURE data.</p>
 <p>There are two key steps in the <code>microhaplot</code> workflow:</p>
 <ol style="list-style-type: decimal">
@@ -231,7 +231,7 @@ s11.sam s11     copper
 s13.bam s13     gold</code></pre>
 <p>Then run <code>prepHaplotFiles</code>, giving it a run label, the directory holding your alignment files, the label file, the VCF, and optionally a number of threads (non-Windows only):</p>
 <pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ltalignani/microhaplot-2" class="external-link">microhaplot</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ngthomas/microhaplot" class="external-link">microhaplot</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># to access package sample case study dataset of rockfish</span></span>
 <span><span class="va">run.label</span> <span class="op">&lt;-</span> <span class="st">"sebastes"</span></span>
@@ -290,7 +290,7 @@ s13.bam s13     gold</code></pre>
 </h3>
 <p>This applies to the R installation route only. If you’re using RStudio Desktop, launch microhaplot so it opens in your default web browser instead of RStudio’s built-in Viewer pane:</p>
 <pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ltalignani/microhaplot-2" class="external-link">microhaplot</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ngthomas/microhaplot" class="external-link">microhaplot</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>shiny.launch.browser <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/runShinyHaplot.html">runShinyHaplot</a></span><span class="op">(</span><span class="st">"~/Shiny/microhaplot"</span><span class="op">)</span></span></code></pre>
 <p>RStudio’s Viewer pane doesn’t always recycle graphics devices cleanly between plot renders, which can eventually surface as a <code>too many open devices</code> error — more likely to show up in tabs with a lot of plots, such as <strong>Population Genetics</strong>. Running in an external browser avoids this.</p>

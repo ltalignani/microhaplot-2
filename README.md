@@ -9,7 +9,8 @@ status](https://www.r-pkg.org/badges/version/microhaplot)](https://CRAN.R-projec
 
 > **This is microhaplot 2**, an extended fork of
 > [ngthomas/microhaplot](https://github.com/ngthomas/microhaplot) maintained
-> by Loïc Talignani (IRD). On top of the original package it adds a
+> by Loïc Talignani (Université de Montpellier). On top of the original
+> package it adds a
 > **Population Genetics** module (F-statistics, allelic diversity, PCA,
 > outlier detection), a **Field Genotyping Prep** app that wraps the
 > extraction behind a guided wizard, **BAM input** support, and a **Docker**
