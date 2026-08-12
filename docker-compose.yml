@@ -20,6 +20,9 @@ services:
     image: ghcr.io/ltalignani/microhaplot-2:${MICROHAPLOT_VERSION:-latest}
     environment:
       MICROHAPLOT_APP: prep
+      # Browser upload ceiling for the TSV and VCF, in MB. Shiny's own
+      # default is 5 MB, which rejects any realistic VCF.
+      MICROHAPLOT_MAX_UPLOAD_MB: ${MICROHAPLOT_MAX_UPLOAD_MB:-2048}
     volumes:
       - ${MICROHAPLOT_DATA_DIR:-./microhaplot-data}:/home/appuser
       - ${MICROHAPLOT_INPUT_DIR:-./microhaplot-data/input}:/home/appuser/input:ro

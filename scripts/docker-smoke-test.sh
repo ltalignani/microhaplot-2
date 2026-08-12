@@ -45,7 +45,13 @@ cleanup() {
     docker compose logs >&2 || true
   fi
   docker compose down --remove-orphans >/dev/null 2>&1 || true
-  rm -rf "$data_dir"
+  # Everything the containers wrote into the volume is owned by the
+  # container's UID (1000 by default), which on Linux is a different user
+  # from whoever runs this script — on a GitHub runner, `runner` is 1001, so
+  # this fails outright. macOS hides the difference, which is why it went
+  # unnoticed. The directory is a mktemp scratch dir either way, so failing
+  # to remove it must not fail the run.
+  rm -rf "$data_dir" 2>/dev/null || true
   return "$status"
 }
 trap cleanup EXIT

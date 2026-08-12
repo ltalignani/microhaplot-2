@@ -6,6 +6,16 @@ library(promises)
 
 future::plan(future::multisession)
 
+# Shiny's default upload ceiling is 5 MB, which rejects any realistic VCF —
+# a panel of a few hundred amplicons across a field campaign runs to tens or
+# hundreds of megabytes. Raise it, and let it be raised further still with
+# MICROHAPLOT_MAX_UPLOAD_MB for anyone whose VCF is larger again.
+max_upload_mb <- suppressWarnings(
+  as.numeric(Sys.getenv("MICROHAPLOT_MAX_UPLOAD_MB", "2048"))
+)
+if (is.na(max_upload_mb) || max_upload_mb <= 0) max_upload_mb <- 2048
+options(shiny.maxRequestSize = max_upload_mb * 1024^2)
+
 TSV_TEMPLATE_HEADER <- "bam_file\tindividual_id\tgroup\tcolor"
 STEP_LABELS <- c("Select folder", "Upload files", "Validate", "Extract", "Done")
 
