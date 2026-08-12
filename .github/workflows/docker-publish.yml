@@ -15,7 +15,11 @@ env:
 jobs:
   build-and-smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A cold build compiles ggiraph's C++ chain, pcadapt and RSpectra from
+    # source, which takes ~19 minutes even natively on Apple Silicon. The
+    # first run of this job was cancelled at a 15-minute limit before it
+    # reached the smoke test at all.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +31,10 @@ jobs:
           context: .
           load: true
           tags: ${{ env.IMAGE }}:smoke-test
+          # Persist the layers so later runs — and the publish job below,
+          # for its amd64 half — skip the dependency compile entirely.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Same script the maintainer runs locally; the image is already built
       # and loaded above, so it only needs to orchestrate and verify.
@@ -40,7 +48,10 @@ jobs:
     needs: build-and-smoke-test
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # amd64 comes from the cache the smoke-test job just populated, but
+    # arm64 is built from scratch under QEMU emulation, which is far slower
+    # than the native build.
+    timeout-minutes: 120
     permissions:
       contents: read
       packages: write
@@ -61,6 +72,8 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ${{ env.IMAGE }}:${{ github.ref_name }}
             ${{ env.IMAGE }}:latest
