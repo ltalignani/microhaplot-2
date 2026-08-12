@@ -30,8 +30,8 @@ Imports:
     promises (>= 1.2.0),
     hierfstat,
     pcadapt
-URL: https://github.com/ngthomas/microhaplot
-BugReports: https://github.com/ngthomas/microhaplot/issues
+URL: https://github.com/ltalignani/microhaplot-2
+BugReports: https://github.com/ltalignani/microhaplot-2/issues
 Suggests:
     knitr,
     rmarkdown,

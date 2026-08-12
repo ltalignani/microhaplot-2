@@ -456,6 +456,132 @@ move from locus to locus.  This can be very useful for identifying individuals t
 across multiple loci.
 
 
+# Population Genetics
+
+The **Population Genetics** menu holds four tabs that treat your called
+genotypes as a population sample: *F-statistics*, *Allelic diversity*,
+*PCA / Projection*, and *Outlier scan*.
+
+These analyses compare groups, so they need a data set with more than one
+group. `fish1.rds`, which we have used up to now, has only one (`group1`),
+and F-statistics and the outlier scan are meaningless on it. **Switch to
+`fish2.rds`** in the *Data Set* panel for this section: it holds 288
+individuals across 14 loci in two groups, `pop1` and `pop2`. Everything
+below was produced from that data set.
+
+## Raw or Filtered? Read this before believing any number
+
+Every tab in this menu offers a **Data source** choice between *Raw* and
+*Filtered*, and it defaults to *Raw*. The difference is not cosmetic. Here
+is the per-locus table on *Raw*:
+
+<img src="popgen-fstatistics-raw.png" title="F-statistics on the Raw data source" width="100%" />
+
+Observed heterozygosity (`Ho`) is exactly 1 at nearly every locus, and `Fis`
+is strongly negative everywhere, between roughly -0.12 and -0.39. No real
+population behaves like that. The explanation is mechanical: on unfiltered
+data, each individual's two top-ranked haplotypes at a locus are taken as
+its diplotype, and two top-ranked haplotypes are different from one another
+by construction — so almost everyone is scored heterozygous.
+
+Switching to *Filtered* applies the read-depth and allele-balance criteria
+you set in the *Criteria Cutoff* and *Genotype Call* tabs, and the picture
+becomes sane:
+
+<img src="popgen-fstatistics.png" title="F-statistics on the Filtered data source" width="100%" />
+
+`Ho` now runs from about 0.26 to 0.59 against comparable `He`, and `Fis`
+sits between -0.02 and +0.17 — small departures from Hardy-Weinberg of the
+sort real data shows. **Use *Filtered* for anything you intend to
+interpret**, and treat *Raw* as a diagnostic view of what the extraction
+found before any calling decisions were applied.
+
+## F-statistics
+
+The tab reports three things: a per-locus table of `Ho`, `He`, `Fis`, `Fst`
+and `Fit`; a pairwise `Fst` heatmap between groups; and per-locus `BetaS`
+(Weir & Goudet's beta). Each table has its own **Download CSV** button.
+
+On `fish2.rds` the answer is unambiguous and negative: per-locus `Fst`
+values hover around zero (-0.0015 to +0.0041), and pairwise `Fst` between
+`pop1` and `pop2` is -0.0002. Slightly negative `Fst` is not a bug — the
+estimator is unbiased, so it scatters below zero when the true value is
+approximately zero.
+
+`pop1` and `pop2` are, on these 14 loci, genetically indistinguishable.
+That is a perfectly good result, and worth stating plainly: a great many
+real comparisons come out this way, and recognising the shape of a null
+result matters as much as recognising a positive one.
+
+## Allelic diversity
+
+<img src="popgen-allelic-diversity.png" title="Allelic diversity" width="100%" />
+
+This tab reports allelic richness per locus and per group, as a table (one
+row per locus and group, downloadable as CSV) and as a grouped bar chart.
+The richness is *rarefied* to the smallest group, so a group that simply
+had more individuals sequenced doesn't appear richer for that reason
+alone — which is what makes the two bars at each locus comparable.
+
+On `fish2.rds` the two groups track each other closely across all 14 loci,
+neither consistently richer than the other. That is what you would expect
+given everything above: two samples from what is, as far as these markers
+can tell, a single population.
+
+## PCA / Projection
+
+This tab runs in two phases, and nothing is computed until you ask for it.
+**Phase 1 — Explore** runs a PCA with K = 10 and draws a scree plot, so you
+can decide how many components are worth keeping. **Phase 2 — Final PCA**
+re-runs with the K you choose and plots the individuals.
+
+<img src="popgen-pca.png" title="PCA scree plot and projections" width="100%" />
+
+The scree plot is the interesting part here. PC1 explains only about 2.3%
+of the variance, and the curve decays almost linearly to 1.7% by PC10 —
+no elbow, no dominant axis. That is what "no structure" looks like: the
+components are dividing up noise more or less evenly.
+
+The projections agree. On every pair of axes, `pop1` (red) and `pop2`
+(teal) are thoroughly intermixed, with no hint of two clouds. This is the
+same conclusion the `Fst` of essentially zero gave us, arrived at without
+using the group labels at all — which is exactly why it is worth doing
+both.
+
+## Outlier scan
+
+This tab also runs in two phases, and adds an `Alpha` control for the
+Benjamini-Hochberg significance level. It uses
+[pcadapt](https://cran.r-project.org/package=pcadapt) to look for loci
+whose allele frequencies are unusually strongly associated with the top K
+principal components.
+
+<img src="popgen-outlier-scan.png" title="Outlier scan with Manhattan plot and diagnostics" width="100%" />
+
+At K = 3 and alpha = 0.05 the scan flags three loci as outliers, one of
+them with an adjusted p-value of 1.6e-9. Taken at face value that looks
+like strong evidence of selection.
+
+**Don't take it at face value.** Two things should stop you:
+
+- We have just established that there is no population structure in this
+  data set. `pcadapt` does not test your group labels; it tests
+  association with the principal components, whatever those happen to
+  capture. With no real structure, the leading PCs describe noise and
+  artefacts, and the loci driving that noise are duly reported as
+  outliers.
+- The **Diagnostics** section exists for precisely this check. The Q-Q
+  plot compares observed to expected p-values, and here the observed
+  values run far above the diagonal rather than following it and lifting
+  only in the tail. That is the signature of an inflated, misspecified
+  test, not of a handful of genuinely selected loci.
+
+The honest reading is that these three loci are worth *investigating* —
+paralogy, a multi-copy region, or systematic genotyping error at those
+amplicons are all likelier explanations than selection — and are not
+evidence of anything on their own. Always read the Manhattan plot together
+with the Q-Q plot below it.
+
 # Output of data
 
 We have already witnessed how to use the *Table* panel to look at the raw data.  It is also possible to

@@ -1,12 +1,12 @@
-pandoc: 2.7.3
-pkgdown: 1.6.1
+pandoc: 2.0.4
+pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   microhaplot-data-prep: microhaplot-data-prep.html
+  microhaplot-docker-extraction: microhaplot-docker-extraction.html
   microhaplot-walkthrough: microhaplot-walkthrough.html
   troubleshoot: troubleshoot.html
-last_built: 2021-06-24T08:02Z
+last_built: 2026-08-12T08:22Z
 urls:
   reference: https://ngthomas.github.io/microhaplot/reference
   article: https://ngthomas.github.io/microhaplot/articles
-

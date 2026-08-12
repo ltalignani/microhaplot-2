@@ -10,3 +10,6 @@ notes
 *.Rproj
 .DS_Store
 tickets.md
+# The user's shared data folder: the documented Docker workflow fills this
+# with their own BAM files, which have no business in the build context.
+microhaplot-data

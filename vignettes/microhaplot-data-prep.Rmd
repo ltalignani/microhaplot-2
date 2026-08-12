@@ -9,8 +9,21 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette concerns itself with an overview of microhaplot and on 
-preparation of data for input into microhaplot Once your data has been transferred to the appropriate Haplot folder, see the `microhaplot walkthrough` vignette to learn more about microhaplot's graphical features.
+This vignette concerns itself with an overview of microhaplot and with the
+upstream bioinformatics that produce its two inputs: aligned reads and a set
+of variant positions. It ends where extraction begins.
+
+Where you go next depends on how you'd rather work:
+
+- **Point-and-click, no installation.** See the *Extracting haplotypes with
+  Docker* vignette, which runs the extraction wizard and the main app in
+  Docker — no R, Perl, or `samtools` to install, and no R console. This is
+  the recommended route if you are not a bioinformatician.
+- **From the R console.** Call `prepHaplotFiles()` yourself, as shown at the
+  end of this vignette.
+
+Either way, once your data has been extracted, see the *microhaplot
+walkthrough* vignette to learn more about microhaplot's graphical features.
 
 ## How does microhaplot work?
 
@@ -119,8 +132,11 @@ checks for it up front and stops with a clear error if it's missing, but only wh
 one `.bam` file is present in your label file; if you're only using `.sam` files, `samtools`
 isn't required at all.
 
-BAM input is not currently supported on Windows; Windows users should convert their BAM
-files to SAM before calling `prepHaplotFiles()`.
+BAM input is not currently supported on Windows when calling `prepHaplotFiles()`
+directly; Windows users should either convert their BAM files to SAM first, or
+run the extraction under Docker (see the *Extracting haplotypes with Docker*
+vignette), where the restriction does not apply — the container is Linux inside
+whatever the host OS is.
 
 We describe here the workflow that we use to get these two necessary files from the
 short-read amplicon sequencing data that come off our Illumina Mi-seq.  This workflow can
@@ -258,13 +274,20 @@ nohup freebayes-parallel <(fasta_generate_regions.py gtseq15_loci.fasta.fai 150)
 
 ```
 
-### runHaplot
+## Extracting the haplotypes
 
-After the above is done, the file `satro384_noMNP_noComplex_noPriors.vcf` can be filtered, if desired, to make 
+After the above is done, the file `satro384_noMNP_noComplex_noPriors.vcf` can be filtered, if desired, to make
 sure that everything in it has a solid SNP.  Then that file is used with the function
-`prepHaplotFiles` to extract haplotypes from the aligned reads in the `map` directory.  
-An example of an vcf file and SAM files extracted from an actual GT-seq rockfish 
-data is available in the `inst/extdata`.
+`prepHaplotFiles` to extract haplotypes from the aligned reads in the `map` directory.
+
+Two example datasets drawn from an actual GT-seq rockfish run ship with the
+package, in `inst/extdata`: `sebastes_sam.tar.gz` (SAM files plus the VCF and a
+label file, used below) and `sebastes_bam.tar.gz` (the same samples as BAM,
+with a metadata TSV, used by the Docker wizard).
+
+If you would rather not call this function yourself, the *Extracting
+haplotypes with Docker* vignette covers the same step through a guided
+wizard, with nothing to install beyond Docker Desktop.
 
 
 ```{r runHaplot, eval=FALSE}
