@@ -141,11 +141,15 @@ You can go back at any point before extraction starts.
 Click **Browse for folder…** and pick the folder holding your BAM files —
 `sebastes-demo` if you're using the demo data.
 
-The browser you get here shows the *container's* filesystem, but because
-the container's home directory is your shared folder, `home` is exactly
-`./microhaplot-data` on your machine. Your subfolder is right there. This
-is the one place where the Docker setup might feel surprising, and it is
-the reason everything else needs no explanation.
+<img src="prep-01b-folder-picker.png" title="Wizard step 1: the folder picker, rooted at the shared volume" width="100%" />
+
+This picker browses the *container's* filesystem, not your machine's. That
+sounds like it should be a problem, and it is the one place where the
+Docker setup might feel surprising — but it is also what makes everything
+else work without explanation. The container's home directory *is* your
+shared folder, so the `home` entry you see here is exactly
+`./microhaplot-data`, and the subfolder you created is sitting right
+there.
 
 Once a folder is selected, its path appears in green and a **Next →**
 button becomes available.
@@ -171,28 +175,33 @@ in place, a **Validate →** button appears.
 Nothing is extracted yet. This step runs every check up front and reports
 *all* the problems it finds at once, rather than stopping at the first one:
 
+- your TSV has the columns it needs, `individual_id` values are present
+  and unique, and any `color` values are valid hex codes;
 - every BAM named in your TSV actually exists in the selected folder;
-- `individual_id` values are present and unique, and any `color` values
-  are valid hex codes;
 - no BAM file is truncated or corrupted (`samtools quickcheck`);
 - the chromosome names in your VCF match the reference names in your BAM
   headers — the check that catches a VCF and a BAM panel that don't
   belong together.
 
-On the demo data all four checks pass. If something fails, fix it and
-click back to the relevant step; the **Start extraction →** button only
-appears once validation is clean.
+On the demo data it reports three green confirmations: the BAM files were
+all found, none is truncated, and the VCF and BAM reference names agree.
+(The TSV schema check has no confirmation line of its own; it only speaks
+up when something is wrong.) If a check fails, fix it and click back to
+the relevant step — the **Start extraction →** button only appears once
+validation is clean.
 
 ### Step 4 — Extract
 
 <img src="prep-04-extract.png" title="Wizard step 4: extraction in progress" width="100%" />
 
 Extraction runs in a background process, so your browser stays responsive,
-and a progress bar tracks it sample by sample. This is the same
+and the progress bar advances sample by sample. This is the same
 `prepHaplotFiles()` machinery documented elsewhere — the wizard is a front
 end to it, not a second implementation.
 
-On the 20-sample demo dataset this takes a few seconds. On a full field
+The screenshot above is from a 500-sample run, so that the bar has
+something to show. On the 20-sample demo dataset the whole extraction is
+over in a couple of seconds and this screen barely appears; on a real field
 campaign of several hundred samples, expect minutes.
 
 ### Step 5 — Done
@@ -202,9 +211,12 @@ campaign of several hundred samples, expect minutes.
 The wizard reports the two files it wrote and where they are:
 
 ```
-~/Shiny/microhaplot/prep_20260811_120306.rds
-~/Shiny/microhaplot/prep_20260811_120306_posinfo.rds
+/home/appuser/Shiny/microhaplot/prep_20260812_101959.rds
+/home/appuser/Shiny/microhaplot/prep_20260812_101959_posinfo.rds
 ```
+
+Those are paths *inside* the container — `/home/appuser` is the container's
+home directory, which is your shared folder.
 
 The run is named `prep_` followed by a timestamp, so repeated runs never
 overwrite each other. On your own machine these files are under

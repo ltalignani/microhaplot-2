@@ -61,11 +61,14 @@ shinyServer(function(input, output, session) {
   observeEvent(input$tsv_file, rv$tsv <- input$tsv_file)
   observeEvent(input$vcf_file, rv$vcf <- input$vcf_file)
 
-  run_extraction <- function() {
+  # Takes its inputs as arguments rather than reading rv$ directly: it is
+  # called from session$onFlushed() (see the input$next_step observer), which
+  # runs outside any reactive context.
+  run_extraction <- function(tsv_datapath, vcf_datapath, folder) {
     rv$extraction_error <- NULL
 
     tryCatch({
-      tsv_df <- read_metadata_tsv(rv$tsv$datapath)
+      tsv_df <- read_metadata_tsv(tsv_datapath)
       label_path <- tempfile(fileext = ".txt")
       build_prep_label_file(tsv_df, label_path)
 
@@ -83,8 +86,7 @@ shinyServer(function(input, output, session) {
       if (!dir.exists(app.path)) mvShinyHaplot(shiny_dir)
 
       n.jobs <- max(1, parallel::detectCores() - 1)
-      folder <- rv$folder
-      vcf.path <- rv$vcf$datapath
+      vcf.path <- vcf_datapath
 
       # rv$out_path/expected_total feed the progress-bar polling observer
       # below; rv$extracting gates it on/off.
@@ -153,7 +155,21 @@ shinyServer(function(input, output, session) {
   observeEvent(input$next_step, {
     if (rv$step == 3) {
       rv$step <- 4
-      run_extraction()
+      # Shiny serialises async work within a session: a promise created in
+      # this same flush cycle holds back every output computed alongside it,
+      # so launching the extraction here would keep step 4 — the progress
+      # bar — from ever reaching the browser. The user would sit on a
+      # greyed-out step 3 for the whole run and then jump straight to
+      # "Done". Deferring to onFlushed() lets step 4 be delivered first.
+      # The reactive values have to be read here, in the reactive context,
+      # because the deferred callback no longer has one.
+      tsv_datapath <- rv$tsv$datapath
+      vcf_datapath <- rv$vcf$datapath
+      folder <- rv$folder
+      session$onFlushed(
+        function() run_extraction(tsv_datapath, vcf_datapath, folder),
+        once = TRUE
+      )
     } else if (rv$step < length(STEP_LABELS)) {
       rv$step <- rv$step + 1
     }
