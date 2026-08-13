@@ -3,8 +3,8 @@
 
 <!-- badges: start -->
 
-[![CRAN
-status](https://www.r-pkg.org/badges/version/microhaplot)](https://CRAN.R-project.org/package=microhaplot)
+[![docker-publish](https://github.com/ltalignani/microhaplot-2/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/ltalignani/microhaplot-2/actions/workflows/docker-publish.yml)
+[![pkgdown](https://github.com/ltalignani/microhaplot-2/actions/workflows/pkgdown.yml/badge.svg)](https://github.com/ltalignani/microhaplot-2/actions/workflows/pkgdown.yml)
 <!-- badges: end -->
 
 > **This is microhaplot 2**, an extended fork of
