@@ -1,3 +1,30 @@
+# microhaplot 2.0.1
+
+## Fixes
+
+* **Population Genetics reported wrong statistics on real panels, silently.**
+  hierfstat takes a diploid genotype as one integer with both alleles packed
+  into it, and infers a single allele width for the whole matrix from its
+  largest value. `encode_hierfstat()` numbered every haplotype ever seen at a
+  locus, including the long tail of low-rank sequencing noise, although only
+  ranks 1 and 2 can enter a genotype. On a 190-locus amplicon panel that gave
+  134 loci with more than 99 alleles and encoded values reaching 300935, so
+  every genotype was split at the wrong digit boundary. Only called alleles
+  are numbered now, and more than 99 at a locus raises an error instead of
+  overflowing.
+
+## Changes
+
+* **The raw data source is gone from Population Genetics.** It was the
+  default, and on unfiltered data an individual's two top-ranked haplotypes
+  differ by construction — observed heterozygosity came out at 1 almost
+  everywhere and Fis around -0.4. The four tabs now always use called
+  genotypes and state the criteria that produce them. The walkthrough
+  explains how those criteria shape the results, including the case where
+  strict settings leave most loci all-homozygous.
+* F-statistics and allelic diversity share one computation instead of each
+  recomputing it.
+
 # microhaplot 2.0.0
 
 First release under the microhaplot 2 name. The version jumps from 1.0.x
