@@ -4019,9 +4019,24 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
   output$popgenGroupWarningFstats <- renderUI(popgen_group_warning(PopGenetics.fstats.tab))
   output$popgenGroupWarningRichness <- renderUI(popgen_group_warning(PopGenetics.fstats.richness))
 
+  # The Locus pill at the top of the window narrows what these per-locus
+  # views show, and nothing else. The statistics themselves stay computed
+  # over every locus and every group: allelic richness is rarefied to the
+  # smallest group, and F-statistics are between-group quantities, so
+  # recomputing either on a subset would change the numbers rather than
+  # filter them. The CSV downloads deliberately ignore the selection too.
+  popgen_show_selected_locus <- function(df) {
+    sel <- input$selectLocus
+    if (is.null(sel) || sel == "ALL" || !("locus" %in% names(df))) {
+      return(df)
+    }
+    keep <- df[df$locus == sel, , drop = FALSE]
+    if (nrow(keep) == 0) df else keep
+  }
+
   output$popgenPerlocTbl <- DT::renderDataTable({
     req(PopGenetics.fstats.tab())
-    fstats_perloc_table(PopGenetics.fstats.tab())
+    popgen_show_selected_locus(fstats_perloc_table(PopGenetics.fstats.tab()))
   })
 
   output$popgenPairwiseHeatmap <- renderPlot({
@@ -4043,20 +4058,21 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
 
   output$popgenBetasTbl <- DT::renderDataTable({
     req(PopGenetics.fstats.tab())
-    betas_table(PopGenetics.fstats.tab())
+    popgen_show_selected_locus(betas_table(PopGenetics.fstats.tab()))
   })
 
   output$popgenRichnessTbl <- DT::renderDataTable({
     req(PopGenetics.fstats.richness())
     tbl <- allelic_richness_table(PopGenetics.fstats.richness())
     tbl$richness <- round(tbl$richness, 3)
-    tbl
+    popgen_show_selected_locus(tbl)
   })
 
   output$popgenRichnessPlot <- renderPlot({
     req(PopGenetics.fstats.richness())
     df <- allelic_richness_table(PopGenetics.fstats.richness())
     df <- df[!is.na(df$richness), ]
+    df <- popgen_show_selected_locus(df)
     ggplot(df, aes(x = locus, y = richness, fill = group)) +
       geom_col(position = "dodge") +
       theme_bw() +
@@ -4064,7 +4080,15 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
       xlab("Locus") + ylab("Rarefied allelic richness")
   }, height = function() {
     fs <- PopGenetics.fstats.richness()
-    n.loci <- if (is.null(fs)) 5 else nrow(fs$basic$perloc)
+    n.loci <- if (is.null(fs)) {
+      5
+    } else if (!is.null(input$selectLocus) && input$selectLocus != "ALL") {
+      # Sized for what is drawn, not for the whole panel: a single selected
+      # locus in a frame scaled for 190 of them is one bar adrift in white.
+      1
+    } else {
+      nrow(fs$basic$perloc)
+    }
     max(400, 20 * n.loci)
   })
 

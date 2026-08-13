@@ -575,7 +575,9 @@ shinyUI(
                             helpText("Computed from called genotypes: haplotypes passing the ",
                                      "Min Allelic Ratio and Min Total Read Depth criteria set ",
                                      "under '+ read criteria', keeping the top 2 ranked ",
-                                     "haplotypes per individual and locus.")
+                                     "haplotypes per individual and locus. Always computed ",
+                                     "over every group and locus; the Locus selector above ",
+                                     "narrows what is displayed, not what is computed.")
                      )
                    ),
                    fluidRow(column(12, h4("Per-locus Ho / He / Fis / Fst / Fit"))),
@@ -605,7 +607,9 @@ shinyUI(
                             helpText("Computed from called genotypes: haplotypes passing the ",
                                      "Min Allelic Ratio and Min Total Read Depth criteria set ",
                                      "under '+ read criteria', keeping the top 2 ranked ",
-                                     "haplotypes per individual and locus.")
+                                     "haplotypes per individual and locus. Always computed ",
+                                     "over every group and locus; the Locus selector above ",
+                                     "narrows what is displayed, not what is computed.")
                      )
                    ),
                    fluidRow(column(12, h4("Rarefied allelic richness"))),
@@ -626,7 +630,9 @@ shinyUI(
                             helpText("Computed from called genotypes: haplotypes passing the ",
                                      "Min Allelic Ratio and Min Total Read Depth criteria set ",
                                      "under '+ read criteria', keeping the top 2 ranked ",
-                                     "haplotypes per individual and locus.")
+                                     "haplotypes per individual and locus. Always computed ",
+                                     "over every group and locus; the Locus selector above ",
+                                     "narrows what is displayed, not what is computed.")
                      )
                    ),
                    fluidRow(column(12, h4("Phase 1 — Explore"))),
@@ -646,7 +652,9 @@ shinyUI(
                             helpText("Computed from called genotypes: haplotypes passing the ",
                                      "Min Allelic Ratio and Min Total Read Depth criteria set ",
                                      "under '+ read criteria', keeping the top 2 ranked ",
-                                     "haplotypes per individual and locus.")
+                                     "haplotypes per individual and locus. Always computed ",
+                                     "over every group and locus; the Locus selector above ",
+                                     "narrows what is displayed, not what is computed.")
                      )
                    ),
                    fluidRow(column(12, h4("Phase 1 — Explore"))),
