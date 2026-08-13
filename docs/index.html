@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">microhaplot</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.4</span>
       </span>
     </div>
 
@@ -231,7 +231,7 @@ s11.sam s11     copper
 s13.bam s13     gold</code></pre>
 <p>Then run <code>prepHaplotFiles</code>, giving it a run label, the directory holding your alignment files, the label file, the VCF, and optionally a number of threads (non-Windows only):</p>
 <pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ngthomas/microhaplot" class="external-link">microhaplot</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ltalignani/microhaplot-2" class="external-link">microhaplot</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># to access package sample case study dataset of rockfish</span></span>
 <span><span class="va">run.label</span> <span class="op">&lt;-</span> <span class="st">"sebastes"</span></span>
@@ -290,7 +290,7 @@ s13.bam s13     gold</code></pre>
 </h3>
 <p>This applies to the R installation route only. If you’re using RStudio Desktop, launch microhaplot so it opens in your default web browser instead of RStudio’s built-in Viewer pane:</p>
 <pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ngthomas/microhaplot" class="external-link">microhaplot</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ltalignani/microhaplot-2" class="external-link">microhaplot</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>shiny.launch.browser <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/runShinyHaplot.html">runShinyHaplot</a></span><span class="op">(</span><span class="st">"~/Shiny/microhaplot"</span><span class="op">)</span></span></code></pre>
 <p>RStudio’s Viewer pane doesn’t always recycle graphics devices cleanly between plot renders, which can eventually surface as a <code>too many open devices</code> error — more likely to show up in tabs with a lot of plots, such as <strong>Population Genetics</strong>. Running in an external browser avoids this.</p>
