@@ -3974,12 +3974,15 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
   # data-source toggle (per the UI-layout decision — no shared/persistent
   # control area in v1), so these are plain helpers called from each
   # sub-tab's own reactive wrapper rather than a single shared reactive.
-  popgen_active_data <- function(source_choice) {
-    haplo.data <- if (identical(source_choice, "filtered")) {
-      PopGenetics.filtered.haplo()
-    } else {
-      update.Haplo.file()
-    }
+  # Called genotypes only. These analyses used to offer a raw/filtered
+  # toggle that defaulted to raw, which is not a defensible default here:
+  # without the calling criteria applied, an individual's two top-ranked
+  # haplotypes at a locus are different from one another by construction, so
+  # observed heterozygosity comes out at 1 nearly everywhere and Fis at
+  # large negative values. Those are artefacts of the encoding, not results,
+  # and offering them beside the real ones invited misreading.
+  popgen_active_data <- function() {
+    haplo.data <- PopGenetics.filtered.haplo()
     if (is.null(haplo.data) || nrow(haplo.data) == 0) return(NULL)
     haplo.data
   }
@@ -3990,8 +3993,8 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
 
   # F-statistics and Allelic diversity both derive from compute_fstats(),
   # so that computation is factored into one helper too.
-  popgen_fstats_for <- function(source_choice) {
-    haplo.data <- popgen_active_data(source_choice)
+  popgen_fstats_for <- function() {
+    haplo.data <- popgen_active_data()
     if (is.null(haplo.data)) return(NULL)
 
     groups <- popgen_groups_by_id(haplo.data)
@@ -4000,12 +4003,12 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
     compute_fstats(encode_hierfstat(haplo.data), groups)
   }
 
+  # One computation, shared: F-statistics and allelic diversity read the
+  # same result rather than each recomputing compute_fstats() from scratch.
   PopGenetics.fstats.tab <- reactive({
-    popgen_fstats_for(input$popgenDataSource_fstats)
+    popgen_fstats_for()
   })
-  PopGenetics.fstats.richness <- reactive({
-    popgen_fstats_for(input$popgenDataSource_richness)
-  })
+  PopGenetics.fstats.richness <- PopGenetics.fstats.tab
 
   popgen_group_warning <- function(fstats.reactive) {
     if (is.null(fstats.reactive())) {
@@ -4102,7 +4105,7 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
   # data" flow only.
 
   PopGenetics.pca.data <- reactive({
-    popgen_active_data(input$popgenDataSource_pca)
+    popgen_active_data()
   })
 
   PopGenetics.pca.onehot <- reactive({
@@ -4113,11 +4116,6 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
 
   popgen.pca.explore <- reactiveVal(NULL)
   popgen.pca.final <- reactiveVal(NULL)
-
-  observeEvent(input$popgenDataSource_pca, {
-    popgen.pca.explore(NULL)
-    popgen.pca.final(NULL)
-  })
 
   observeEvent(input$popgenPcaExploreBtn, {
     req(PopGenetics.pca.onehot())
@@ -4205,18 +4203,13 @@ while the bottom panel hosts a wide selection of tables and graphical summaries.
   # ---- Outlier scan ---------------------------------------------------------
 
   PopGenetics.pcadapt.onehot <- reactive({
-    d <- popgen_active_data(input$popgenDataSource_outlier)
+    d <- popgen_active_data()
     if (is.null(d)) return(NULL)
     encode_onehot(d)
   })
 
   popgen.pcadapt.explore <- reactiveVal(NULL)
   popgen.pcadapt.final <- reactiveVal(NULL)
-
-  observeEvent(input$popgenDataSource_outlier, {
-    popgen.pcadapt.explore(NULL)
-    popgen.pcadapt.final(NULL)
-  })
 
   observeEvent(input$popgenPcadaptExploreBtn, {
     req(PopGenetics.pcadapt.onehot())

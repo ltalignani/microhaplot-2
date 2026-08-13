@@ -8,6 +8,15 @@
 #' cell as code1 * 100 + code2 (hierfstat convention). Individuals absent at
 #' a locus get NA.
 #'
+#' Only rank 1 and rank 2 haplotypes are numbered, because only those can
+#' become part of a diplotype below. Numbering every haplotype ever seen at
+#' a locus — including the long tail of low-rank sequencing noise, which on
+#' a real amplicon panel runs to thousands per locus — pushed codes far
+#' past 99 and broke the packing: hierfstat::getal() infers a single allele
+#' width for the whole matrix from its maximum value, so one oversized code
+#' anywhere makes it split every genotype at the wrong digit boundary, and
+#' the statistics come out wrong without any error being raised.
+#'
 #' @param haplo_data data.frame with columns group, id, locus, haplo, rank.
 #' @return list with $matrix (individuals x loci) and $allele_codes.
 #' @export
@@ -15,13 +24,27 @@ encode_hierfstat <- function(haplo_data) {
   ids  <- sort(unique(haplo_data$id))
   loci <- sort(unique(haplo_data$locus))
 
+  callable <- haplo_data[haplo_data$rank <= 2L, ]
+
   allele_codes <- lapply(loci, function(lo) {
-    haplos <- sort(unique(haplo_data$haplo[haplo_data$locus == lo]))
+    haplos <- sort(unique(callable$haplo[callable$locus == lo]))
     codes <- seq_along(haplos)
     names(codes) <- haplos
     codes
   })
   names(allele_codes) <- loci
+
+  # Two digits per allele is what the packing below assumes and what
+  # hierfstat infers for any matrix whose maximum stays under 10000. Rather
+  # than silently overflow into numbers it would misread, refuse.
+  crowded <- names(allele_codes)[vapply(allele_codes, length, 1L) > 99L]
+  if (length(crowded) > 0) {
+    stop("more than 99 called alleles at ", length(crowded), " locus/loci (",
+         paste(utils::head(crowded, 3), collapse = ", "),
+         if (length(crowded) > 3) ", ..." else "",
+         "); hierfstat cannot encode these. Tighten the genotype-calling ",
+         "criteria, or drop these loci.", call. = FALSE)
+  }
 
   m <- matrix(NA_integer_, nrow = length(ids), ncol = length(loci),
               dimnames = list(ids, loci))

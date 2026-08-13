@@ -572,9 +572,10 @@ shinyUI(
                    fluidRow(column(12, uiOutput("popgenGroupWarningFstats"))),
                    fluidRow(
                      column(4,
-                            radioButtons("popgenDataSource_fstats", "Data source:",
-                                         c("Raw" = "raw", "Filtered" = "filtered"),
-                                         selected = "raw")
+                            helpText("Computed from called genotypes: haplotypes passing the ",
+                                     "Min Allelic Ratio and Min Total Read Depth criteria set ",
+                                     "under '+ read criteria', keeping the top 2 ranked ",
+                                     "haplotypes per individual and locus.")
                      )
                    ),
                    fluidRow(column(12, h4("Per-locus Ho / He / Fis / Fst / Fit"))),
@@ -601,9 +602,10 @@ shinyUI(
                    fluidRow(column(12, uiOutput("popgenGroupWarningRichness"))),
                    fluidRow(
                      column(4,
-                            radioButtons("popgenDataSource_richness", "Data source:",
-                                         c("Raw" = "raw", "Filtered" = "filtered"),
-                                         selected = "raw")
+                            helpText("Computed from called genotypes: haplotypes passing the ",
+                                     "Min Allelic Ratio and Min Total Read Depth criteria set ",
+                                     "under '+ read criteria', keeping the top 2 ranked ",
+                                     "haplotypes per individual and locus.")
                      )
                    ),
                    fluidRow(column(12, h4("Rarefied allelic richness"))),
@@ -621,9 +623,10 @@ shinyUI(
                    h5("PCA / Projection"),
                    fluidRow(
                      column(4,
-                            radioButtons("popgenDataSource_pca", "Data source:",
-                                         c("Raw" = "raw", "Filtered" = "filtered"),
-                                         selected = "raw")
+                            helpText("Computed from called genotypes: haplotypes passing the ",
+                                     "Min Allelic Ratio and Min Total Read Depth criteria set ",
+                                     "under '+ read criteria', keeping the top 2 ranked ",
+                                     "haplotypes per individual and locus.")
                      )
                    ),
                    fluidRow(column(12, h4("Phase 1 — Explore"))),
@@ -640,9 +643,10 @@ shinyUI(
                    h5("Outlier scan"),
                    fluidRow(
                      column(4,
-                            radioButtons("popgenDataSource_outlier", "Data source:",
-                                         c("Raw" = "raw", "Filtered" = "filtered"),
-                                         selected = "raw")
+                            helpText("Computed from called genotypes: haplotypes passing the ",
+                                     "Min Allelic Ratio and Min Total Read Depth criteria set ",
+                                     "under '+ read criteria', keeping the top 2 ranked ",
+                                     "haplotypes per individual and locus.")
                      )
                    ),
                    fluidRow(column(12, h4("Phase 1 — Explore"))),
