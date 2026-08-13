@@ -30,43 +30,26 @@ dataset <- "fish2.rds"
 # "Explore" runs, and the Phase 2 button only exists once Phase 1 has
 # rendered. Capturing them without driving those buttons yields an empty
 # form, so each tab carries the sequence of buttons to press first.
-#
-# Every tab defaults to the "Raw" data source, which on these datasets scores
-# nearly every individual heterozygous (Ho = 1, strongly negative Fis) because
-# an unfiltered top-2-haplotype diplotype is heterozygous by construction.
-# "Filtered" is the honest view, so it is what the vignette shows — except for
-# one deliberate Raw capture kept to illustrate exactly that trap.
-radio <- function(id, value = "filtered") {
-  sprintf("input[name=%s][value=%s]", id, value)
-}
-
 tabs <- list(
   list(
     label = "F-statistics",
-    file = "popgen-fstatistics-raw.png",
-    clicks = radio("popgenDataSource_fstats", "raw")
-  ),
-  list(
-    label = "F-statistics",
     file = "popgen-fstatistics.png",
-    clicks = radio("popgenDataSource_fstats")
+    clicks = character()
   ),
   list(
     label = "Allelic diversity",
     file = "popgen-allelic-diversity.png",
-    clicks = radio("popgenDataSource_richness")
+    clicks = character()
   ),
   list(
     label = "PCA / Projection",
     file = "popgen-pca.png",
-    clicks = c(radio("popgenDataSource_pca"),
-               "#popgenPcaExploreBtn", "#popgenPcaRunBtn")
+    clicks = c("#popgenPcaExploreBtn", "#popgenPcaRunBtn")
   ),
   list(
     label = "Outlier scan",
     file = "popgen-outlier-scan.png",
-    clicks = c(radio("popgenDataSource_outlier"),
-               "#popgenPcadaptExploreBtn", "#popgenPcadaptRunBtn")
+    clicks = c("#popgenPcadaptExploreBtn", "#popgenPcadaptRunBtn")
   )
 )
 

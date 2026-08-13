@@ -505,38 +505,44 @@ and F-statistics and the outlier scan are meaningless on it. **Switch to
 individuals across 14 loci in two groups, `pop1` and `pop2`. Everything
 below was produced from that data set.
 
-## Raw or Filtered? Read this before believing any number
+## What these tabs are computed from
 
-Every tab in this menu offers a **Data source** choice between *Raw* and
-*Filtered*, and it defaults to *Raw*. The difference is not cosmetic. Here
-is the per-locus table on *Raw*:
+Every tab in this menu works from **called genotypes**, never from the raw
+extraction. Three rules produce them, and all three are yours to set:
 
-<img src="popgen-fstatistics-raw.png" title="F-statistics on the Raw data source" width="100%" />
+- only haplotypes whose **allele balance** reaches the *Min Allelic Ratio*
+  are kept — the second haplotype must carry at least that fraction of the
+  first one's read depth;
+- only individual-locus combinations whose **total read depth** reaches the
+  *Min Total Read Depth* are kept;
+- only the **top two ranked** haplotypes per individual and locus are
+  considered, since a diploid genotype has room for no more.
 
-Observed heterozygosity (`Ho`) is exactly 1 at nearly every locus, and `Fis`
-is strongly negative everywhere, between roughly -0.12 and -0.39. No real
-population behaves like that. The explanation is mechanical: on unfiltered
-data, each individual's two top-ranked haplotypes at a locus are taken as
-its diplotype, and two top-ranked haplotypes are different from one another
-by construction — so almost everyone is scored heterozygous.
+The first two live under the **+ read criteria** tab at the top of the
+window, and can be overridden locus by locus under **+ locus annotation**.
+An individual left with a single haplotype at a locus is scored homozygous.
 
-Switching to *Filtered* applies the read-depth and allele-balance criteria
-you set in the *Criteria Cutoff* and *Genotype Call* tabs, and the picture
-becomes sane:
+This matters more than it sounds. Applied to the unfiltered extraction, the
+same arithmetic would take each individual's two top-ranked haplotypes as
+its diplotype — and two top-ranked haplotypes differ from one another by
+construction, so observed heterozygosity would come out at 1 nearly
+everywhere and `Fis` at large negative values. Those numbers describe the
+encoding, not the population. Earlier versions of microhaplot offered them
+as a *Raw* data source, defaulting to it; that option has been removed.
 
-<img src="popgen-fstatistics.png" title="F-statistics on the Filtered data source" width="100%" />
-
-`Ho` now runs from about 0.26 to 0.59 against comparable `He`, and `Fis`
-sits between -0.02 and +0.17 — small departures from Hardy-Weinberg of the
-sort real data shows. **Use *Filtered* for anything you intend to
-interpret**, and treat *Raw* as a diagnostic view of what the extraction
-found before any calling decisions were applied.
+The corollary is that **your calling criteria decide these results**. On a
+strict setting, loci where the second haplotype rarely clears the ratio
+collapse to all-homozygous, showing `Ho` and `He` of 0 and no `Fis` at all.
+If most of your loci look like that, the criteria are the first thing to
+revisit, not the data.
 
 ## F-statistics
 
 The tab reports three things: a per-locus table of `Ho`, `He`, `Fis`, `Fst`
 and `Fit`; a pairwise `Fst` heatmap between groups; and per-locus `BetaS`
 (Weir & Goudet's beta). Each table has its own **Download CSV** button.
+
+<img src="popgen-fstatistics.png" title="F-statistics" width="100%" />
 
 On `fish2.rds` the answer is unambiguous and negative: per-locus `Fst`
 values hover around zero (-0.0015 to +0.0041), and pairwise `Fst` between
