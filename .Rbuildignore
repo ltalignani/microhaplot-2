@@ -22,3 +22,4 @@
 ^\.dockerignore$
 ^CLAUDE\.md$
 ^docs/agents$
+^\.agents$
