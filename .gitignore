@@ -14,3 +14,5 @@ CLAUDE.md
 .env
 microhaplot-data/
 docs
+.agents
+.scratch

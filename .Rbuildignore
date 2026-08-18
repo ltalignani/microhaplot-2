@@ -20,5 +20,4 @@
 ^docker-entrypoint\.sh$
 ^\.dockerignore$
 ^CLAUDE\.md$
-^docs/agents$
 ^\.agents$
