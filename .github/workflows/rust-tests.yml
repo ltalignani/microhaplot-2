@@ -1,0 +1,53 @@
+name: rust-tests
+
+# Standalone cargo test job for microhaplot-extract — deliberately separate
+# from docker-publish.yml's jobs. Runs on a plain runner, no Docker, so it
+# fails fast on a Rust regression before the slower Docker build (~1min
+# warm, ~4min cold per research/rust-htslib-build-requirements.md) is even
+# attempted. See wayfinder ticket #25 for why this job exists on its own.
+on:
+  push:
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust-tests.yml"
+  pull_request:
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: rust/microhaplot-extract
+    steps:
+      - uses: actions/checkout@v4
+
+      # The one apt package research/rust-htslib-build-requirements.md found
+      # missing on a stock Ubuntu runner: bindgen (via hts-sys) needs
+      # libclang, which build-essential doesn't provide. Everything else
+      # hts-sys needs (a C compiler, cmake, perl) is already on
+      # ubuntu-latest runners.
+      - name: Install libclang
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libclang-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust/microhaplot-extract
+
+      - name: cargo fmt --check
+        run: cargo fmt -- --check
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: cargo test
+        run: cargo test --all-targets

@@ -17,3 +17,6 @@ docs
 .agents
 .scratch
 notes
+
+# Rust build artifacts (rust/microhaplot-extract) — never checked in.
+rust/**/target

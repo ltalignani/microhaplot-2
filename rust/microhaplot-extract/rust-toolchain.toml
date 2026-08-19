@@ -1,0 +1,8 @@
+[toolchain]
+# "stable" rather than a pinned version: research/rust-htslib-build-requirements.md
+# found the actual failure mode here isn't a specific version floor so much
+# as "too old" (a transitive dependency needed edition 2024, stable since
+# 1.85 — this repo's own dev machine was on 1.74.1 and failed outright).
+# rustup with this file present will always fetch/use current stable rather
+# than silently running whatever was installed months ago.
+channel = "stable"

@@ -1,0 +1,17 @@
+[package]
+name = "microhaplot-extract"
+version = "0.1.0"
+edition = "2021"
+description = "Rust replacement for microhaplot's hapture.pl extraction core (wayfinder map #18)"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+# Pinned to the version verified in research/rust-htslib-build-requirements.md
+# (0.47, resolved to 0.47.1 / hts-sys 2.2.1). Bumping this may reopen that
+# research — re-check the build requirements before moving off it.
+rust-htslib = "0.47"
+
+[profile.release]
+# A few seconds of extra build time for a binary this small; the whole
+# point of this port is per-read throughput, not compile speed.
+lto = true
