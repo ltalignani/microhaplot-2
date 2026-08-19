@@ -96,16 +96,23 @@ run_microhaplot_extract <- function(label.path, sam.path, vcf.path, out.path,
   n.jobs <- round(n.jobs)
   if (n.jobs <= 0) stop("the n.jobs is expected to be positive integer")
 
-  result <- system2(
-    bin,
-    args = c(
-      "--label-file", shQuote(label.path),
-      "--sample-dir", shQuote(sam.path),
-      "--vcf", shQuote(vcf.path),
-      "--output-dir", shQuote(out.path),
-      "--threads", as.character(n.jobs)
+  # A non-zero exit is an expected, explicitly-handled outcome here (checked
+  # right below), not a warning-worthy surprise -- suppresses system2()'s own
+  # "had status N" warning so callers only see the stop() this function
+  # raises with the binary's actual message.
+  result <- withCallingHandlers(
+    system2(
+      bin,
+      args = c(
+        "--label-file", shQuote(label.path),
+        "--sample-dir", shQuote(sam.path),
+        "--vcf", shQuote(vcf.path),
+        "--output-dir", shQuote(out.path),
+        "--threads", as.character(n.jobs)
+      ),
+      stdout = TRUE, stderr = TRUE
     ),
-    stdout = TRUE, stderr = TRUE
+    warning = function(w) invokeRestart("muffleWarning")
   )
 
   status <- attr(result, "status")
