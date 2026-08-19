@@ -66,6 +66,17 @@ rm -f "$fixture_dir/sebastes-all.summary.tmp"
 perl "$hapture" -v "$work/sebastes.vcf" -s "$fixture_dir/edge-cases.sam" \
   -i edge -g edge | sort > "$fixture_dir/edge-cases.summary"
 
+# ---- edge-cases.bam: the same two reads, for microhaplot-extract's tests --
+# microhaplot-extract (the Rust port, wayfinder map #18) only reads BAM —
+# rust-htslib refuses edge-cases.sam outright (it has no @SQ header lines;
+# hapture.pl tolerates that, rust-htslib doesn't — see ticket #29's
+# resolution comment). Same conversion idiom as scripts/make-bam-fixture.sh.
+command -v samtools >/dev/null || { echo "samtools is required" >&2; exit 1; }
+printf 'tag_id_2301\t1000000\n' > "$work/edge-cases-ref-sizes.txt"
+samtools view -bt "$work/edge-cases-ref-sizes.txt" \
+  -o "$fixture_dir/edge-cases.bam" "$fixture_dir/edge-cases.sam"
+
 echo "wrote sebastes-all.summary ($(wc -l < "$fixture_dir/sebastes-all.summary") rows)"
 echo "wrote sebastes-per-sample/ (20 files)"
 echo "wrote edge-cases.summary ($(wc -l < "$fixture_dir/edge-cases.summary") rows, expect 0)"
+echo "wrote edge-cases.bam"

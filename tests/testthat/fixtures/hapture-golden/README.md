@@ -23,6 +23,12 @@ match, canonicalized, to be considered behavior-preserving.
   reads real sequencing data doesn't produce: a secondary-alignment read
   (SAM flag 256) and a 1-base query. Both must be skipped outright;
   `edge-cases.summary` is empty (0 rows) by design.
+- `edge-cases.bam` — the same two reads as `edge-cases.sam`, converted with
+  `samtools view -bt` (the same idiom `scripts/make-bam-fixture.sh` uses) so
+  `microhaplot-extract`'s golden tests — which only read BAM, since
+  `hapture.pl`'s SAM support existed for input rust-htslib refuses outright
+  (headerless SAM; see wayfinder ticket #29's resolution) rather than input
+  worth preserving — have a BAM edge-cases input to run against.
 - `capture-golden-fixtures.sh` — regenerates the above from scratch. Run for
   provenance or disaster recovery only — **not** to "refresh" these files
   after a behavior change, which would defeat their purpose as a fixed

@@ -10,6 +10,10 @@ license = "GPL-3.0-or-later"
 # (0.47, resolved to 0.47.1 / hts-sys 2.2.1). Bumping this may reopen that
 # research — re-check the build requirements before moving off it.
 rust-htslib = "0.47"
+thiserror = "1"
+
+[dev-dependencies]
+tempfile = "3"
 
 [profile.release]
 # A few seconds of extra build time for a binary this small; the whole
