@@ -1,45 +1,66 @@
-//! Rust replacement for microhaplot's `hapture.pl` extraction core.
-//! See wayfinder map #18 and its child tickets for the decisions behind
-//! this crate's shape.
-//!
-//! This binary does nothing real yet — ticket #28 (this scaffolding) only
-//! has to prove the toolchain and the `rust-htslib` link work end to end.
-//! Real extraction logic lands in ticket #29.
+//! Rust replacement for microhaplot's `hapture.pl` extraction core, and the
+//! per-sample shell-script/process-spawning `R/runHaplot.R` currently
+//! generates around it. See wayfinder map #18 and its child tickets for the
+//! decisions behind this crate's shape; the CLI contract below is ticket
+//! #23's decision, the batch behavior it drives is ticket #30's.
 
-use std::ffi::CStr;
+use std::path::PathBuf;
+use std::process::ExitCode;
 
-/// The htslib version this binary was linked against, read through
-/// `rust-htslib`'s raw FFI bindings. Exists to prove the C library is
-/// genuinely linked and callable, not just that `Cargo.toml` parses —
-/// `hts_version()` is stable, public htslib API (`htslib/hts.h`).
-fn htslib_version() -> String {
-    // SAFETY: hts_version() takes no arguments and always returns a
-    // non-null pointer to a static, NUL-terminated C string owned by
-    // htslib itself — never freed, safe to read for the process lifetime.
-    unsafe {
-        let ptr = rust_htslib::htslib::hts_version();
-        CStr::from_ptr(ptr).to_string_lossy().into_owned()
-    }
+use clap::Parser;
+
+use microhaplot_extract::batch::run_batch;
+
+/// Extracts haplotypes for every sample in a label file, in parallel,
+/// against one VCF's variant sites — replacing R's current per-sample
+/// invocation loop with a single call.
+#[derive(Parser)]
+#[command(name = "microhaplot-extract", version, about)]
+struct Cli {
+    /// Headerless, tab-separated label file: alignment filename,
+    /// individual id, group (the same format `build_prep_label_file()`
+    /// already produces in R — no new manifest).
+    #[arg(short = 'l', long = "label-file")]
+    label_file: PathBuf,
+
+    /// Directory containing the alignment (BAM) files named in the label
+    /// file's first column.
+    #[arg(short = 's', long = "sample-dir")]
+    sample_dir: PathBuf,
+
+    /// VCF listing this run's variant sites.
+    #[arg(short = 'v', long = "vcf")]
+    vcf: PathBuf,
+
+    /// Directory to write the combined `all.summary` output and each
+    /// sample's `<individual id>.summary` completion marker into (matches
+    /// `prepHaplotFiles()`'s existing `intermed/` directory, so its
+    /// progress poller needs no changes).
+    #[arg(short = 'o', long = "output-dir")]
+    output_dir: PathBuf,
+
+    /// Number of samples to process concurrently.
+    #[arg(short = 't', long = "threads", default_value_t = 1)]
+    threads: usize,
 }
 
-fn main() {
-    println!("microhaplot-extract {}", env!("CARGO_PKG_VERSION"));
-    println!("linked against htslib {}", htslib_version());
-}
+fn main() -> ExitCode {
+    let cli = Cli::parse();
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn links_against_a_real_htslib() {
-        // A placeholder in the sense that it asserts nothing about
-        // microhaplot's own logic (none exists yet) — but it is a real
-        // test: it fails if the FFI link is broken or returns garbage.
-        let version = htslib_version();
-        assert!(
-            !version.is_empty(),
-            "hts_version() returned an empty string"
-        );
+    match run_batch(
+        &cli.label_file,
+        &cli.sample_dir,
+        &cli.vcf,
+        &cli.output_dir,
+        cli.threads,
+    ) {
+        Ok(n) => {
+            eprintln!("microhaplot-extract: processed {n} sample(s)");
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            eprintln!("microhaplot-extract: error: {e}");
+            ExitCode::FAILURE
+        }
     }
 }

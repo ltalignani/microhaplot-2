@@ -11,6 +11,10 @@ license = "GPL-3.0-or-later"
 # research — re-check the build requirements before moving off it.
 rust-htslib = "0.47"
 thiserror = "1"
+# CLI argument parsing (ticket #30's batch entry point) and internal-sample
+# parallelism (the thread-count contract decided in ticket #23).
+clap = { version = "4", features = ["derive"] }
+rayon = "1"
 
 [dev-dependencies]
 tempfile = "3"
