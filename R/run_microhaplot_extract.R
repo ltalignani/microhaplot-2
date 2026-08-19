@@ -104,6 +104,7 @@ run_microhaplot_extract <- function(label.path, sam.path, vcf.path, out.path,
     system2(
       bin,
       args = c(
+        "extract",
         "--label-file", shQuote(label.path),
         "--sample-dir", shQuote(sam.path),
         "--vcf", shQuote(vcf.path),
@@ -141,4 +142,61 @@ run_microhaplot_extract <- function(label.path, sam.path, vcf.path, out.path,
     dplyr::as_tibble()
   colnames(haplo.sum) <- col_names
   haplo.sum
+}
+
+#' Validate BAM files via microhaplot-extract's validate subcommand
+#'
+#' Internal wrapper (wayfinder ticket #31) around \code{microhaplot-extract
+#' validate}, which replaces the field prep wizard's \code{samtools
+#' quickcheck} + \code{samtools view -H} shell-outs with one call per file
+#' to the already-built binary. Returns results in the same shape
+#' \code{.check_bam_integrity()} (\code{R/prep_validation.R}) already
+#' produces looping over multiple paths with two \code{samtools} calls per
+#' file, so swapping the implementation later is a small, localized change.
+#' Not yet wired into \code{prep_validation.R} -- callable and testable on
+#' its own.
+#'
+#' @param bam.paths character vector. Paths to the BAM files to check. Required.
+#' @param bin.path string. Optional. Explicit path to the
+#'   \code{microhaplot-extract} binary, bypassing auto-detection.
+#' @return A list with elements \code{errors} (character vector, one
+#'   message per truncated/corrupted file, naming the file) and
+#'   \code{bam_refs} (character vector, the union of \code{@SQ} reference
+#'   names across every file that passed).
+#' @keywords internal
+#' @noRd
+check_bam_integrity_rust <- function(bam.paths, bin.path = NULL) {
+  bin <- bin.path
+  if (is.null(bin)) bin <- find_microhaplot_extract_bin()
+  if (is.na(bin) || !nzchar(bin) || !file.exists(bin)) {
+    stop(
+      "microhaplot-extract binary not found. Build it with `cargo build",
+      " --release` in rust/microhaplot-extract/, or pass bin.path explicitly."
+    )
+  }
+
+  errors <- character()
+  bam_refs <- character()
+
+  for (path in bam.paths) {
+    result <- withCallingHandlers(
+      system2(
+        bin, args = c("validate", "--bam", shQuote(path)),
+        stdout = TRUE, stderr = TRUE
+      ),
+      warning = function(w) invokeRestart("muffleWarning")
+    )
+
+    status <- attr(result, "status")
+    if (!is.null(status) && status != 0) {
+      errors <- c(errors, sprintf(
+        "%s appears truncated or corrupted (microhaplot-extract validate failed).",
+        basename(path)
+      ))
+    } else {
+      bam_refs <- union(bam_refs, result)
+    }
+  }
+
+  list(errors = errors, bam_refs = bam_refs)
 }

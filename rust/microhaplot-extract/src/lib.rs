@@ -8,8 +8,10 @@ pub mod cigar;
 pub mod extract;
 pub mod format;
 pub mod label;
+pub mod validate;
 pub mod vcf;
 
 pub use batch::{run_batch, BatchError};
 pub use extract::{extract_sample, to_tsv_line, ExtractError, HaplotypeSummary};
 pub use label::{read_label_file, LabelError, LabelRow};
+pub use validate::{validate_bam, ValidateError};
