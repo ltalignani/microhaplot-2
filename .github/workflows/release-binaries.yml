@@ -1,0 +1,119 @@
+name: release-binaries
+
+# Publishes prebuilt microhaplot-extract binaries as GitHub Release assets
+# at every version tag (wayfinder ticket #32) -- the release-publishing half
+# of the local-install distribution decided in ticket #22: Docker keeps
+# compiling the Rust crate at image-build time (docker-publish.yml), but a
+# local, non-Docker R install downloads a prebuilt binary instead of
+# requiring a Rust toolchain (that fetch/cache step is ticket #33's job;
+# this workflow only has to make the binaries exist as release assets for
+# it to find).
+#
+# Four platforms, one native runner each -- the same no-QEMU approach
+# docker-publish.yml already established for linux/amd64 + linux/arm64,
+# extended here to macOS arm64 + x86_64 (both need no extra setup per
+# research/rust-htslib-build-requirements.md's local-macOS findings: Xcode
+# command-line tools + system perl were already enough). Windows is out of
+# scope per wayfinder ticket #24.
+on:
+  push:
+    tags: ["v*"]
+  # Lets the maintainer test the build matrix without cutting a tag; the
+  # publish job below still only runs for a real tag push.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      # One platform failing to build shouldn't hide failures on the
+      # others -- the publish job below is what actually enforces "no
+      # partial release": it needs every one of these to succeed.
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runner: ubuntu-latest
+          - name: linux-arm64
+            runner: ubuntu-24.04-arm
+          - name: macos-arm64
+            runner: macos-14
+          - name: macos-x86_64
+            runner: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same missing package rust-tests.yml already found on Ubuntu
+      # runners: bindgen (via hts-sys) needs libclang, which
+      # build-essential doesn't provide. Not needed on macOS runners --
+      # Xcode's own libclang is enough (confirmed locally, see
+      # research/rust-htslib-build-requirements.md).
+      - name: Install libclang (Linux only)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libclang-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust/microhaplot-extract
+
+      - name: cargo build --release
+        working-directory: rust/microhaplot-extract
+        run: cargo build --release
+
+      - name: Stage the binary under its platform name
+        run: |
+          mkdir -p dist
+          cp rust/microhaplot-extract/target/release/microhaplot-extract \
+            "dist/microhaplot-extract-${{ matrix.name }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: microhaplot-extract-${{ matrix.name }}
+          path: dist/microhaplot-extract-${{ matrix.name }}
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    # Only runs once every matrix entry above has succeeded -- a build
+    # failure on any one platform skips this job entirely, so a tag push
+    # never publishes a partial set of release assets.
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: microhaplot-extract-*
+          merge-multiple: true
+
+      # This repo's existing convention (confirmed against its git tags):
+      # tag vX.Y.Z matches DESCRIPTION's Version: X.Y.Z exactly.
+      - name: Confirm the tag matches DESCRIPTION's Version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          desc_version=$(sed -n 's/^Version: *//p' DESCRIPTION)
+          if [ "$tag_version" != "$desc_version" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match DESCRIPTION's Version: $desc_version"
+            exit 1
+          fi
+
+      - name: Make binaries executable
+        run: chmod +x dist/*
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          fail_on_unmatched_files: true
