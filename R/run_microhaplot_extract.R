@@ -1,46 +1,3 @@
-#' Locate the compiled microhaplot-extract binary
-#'
-#' Checks, in order: the \code{MICROHAPLOT_EXTRACT_BIN} environment
-#' variable, then a release build, then a debug build, under
-#' \code{rust/microhaplot-extract/target/} relative to the package's own
-#' root. Two candidate roots are tried, since \code{system.file(package =
-#' "microhaplot")} points at different places depending on how the package
-#' was loaded: one directory up under \code{devtools::load_all()} (which
-#' resolves to the installed-package layout's \code{inst/}), or the same
-#' directory for a real install. Prebuilt-binary distribution with the R
-#' package (wayfinder tickets #32/#33) hasn't landed yet -- until then this
-#' only finds a binary in a local source checkout already built with
-#' \code{cargo build [--release]}.
-#'
-#' @return string path to the binary, or \code{NA_character_} if none was found.
-#' @keywords internal
-#' @noRd
-find_microhaplot_extract_bin <- function() {
-  env_bin <- Sys.getenv("MICROHAPLOT_EXTRACT_BIN", unset = NA)
-  if (!is.na(env_bin) && nzchar(env_bin) && file.exists(env_bin)) {
-    return(env_bin)
-  }
-
-  pkg_dir <- system.file(package = "microhaplot")
-  candidate_roots <- c(dirname(pkg_dir), pkg_dir)
-  exe_name <- if (.Platform$OS.type == "windows") {
-    "microhaplot-extract.exe"
-  } else {
-    "microhaplot-extract"
-  }
-
-  for (root in candidate_roots) {
-    for (profile in c("release", "debug")) {
-      candidate <- file.path(
-        root, "rust", "microhaplot-extract", "target", profile, exe_name
-      )
-      if (file.exists(candidate)) return(candidate)
-    }
-  }
-
-  NA_character_
-}
-
 #' Run microhaplot-extract over a batch of samples
 #'
 #' Internal wrapper around the \code{microhaplot-extract} binary (wayfinder
@@ -70,14 +27,7 @@ find_microhaplot_extract_bin <- function() {
 #' @noRd
 run_microhaplot_extract <- function(label.path, sam.path, vcf.path, out.path,
                                      n.jobs = 1, bin.path = NULL) {
-  bin <- bin.path
-  if (is.null(bin)) bin <- find_microhaplot_extract_bin()
-  if (is.na(bin) || !nzchar(bin) || !file.exists(bin)) {
-    stop(
-      "microhaplot-extract binary not found. Build it with `cargo build",
-      " --release` in rust/microhaplot-extract/, or pass bin.path explicitly."
-    )
-  }
+  bin <- resolve_bin_or_stop(bin.path)
 
   if (!file.exists(label.path)) {
     stop("the path for 'label.path' - ", label.path, " does not exist")
@@ -166,14 +116,7 @@ run_microhaplot_extract <- function(label.path, sam.path, vcf.path, out.path,
 #' @keywords internal
 #' @noRd
 check_bam_integrity_rust <- function(bam.paths, bin.path = NULL) {
-  bin <- bin.path
-  if (is.null(bin)) bin <- find_microhaplot_extract_bin()
-  if (is.na(bin) || !nzchar(bin) || !file.exists(bin)) {
-    stop(
-      "microhaplot-extract binary not found. Build it with `cargo build",
-      " --release` in rust/microhaplot-extract/, or pass bin.path explicitly."
-    )
-  }
+  bin <- resolve_bin_or_stop(bin.path)
 
   errors <- character()
   bam_refs <- character()
