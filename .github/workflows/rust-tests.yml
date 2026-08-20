@@ -5,15 +5,38 @@ name: rust-tests
 # fails fast on a Rust regression before the slower Docker build (~1min
 # warm, ~4min cold per research/rust-htslib-build-requirements.md) is even
 # attempted. See wayfinder ticket #25 for why this job exists on its own.
+#
+# Also runs one R test (test-prep-extraction-integration.R, wayfinder
+# ticket #35) in this same job, right after cargo test leaves a fresh
+# target/debug/microhaplot-extract in place -- the first R test this repo
+# has ever run in CI. Deliberately not the R package's own dependency set
+# (Imports: ggiraph/pcadapt/hierfstat/shinyFiles/... — a from-source
+# compile heavy enough that docker-publish.yml budgets ~19 minutes for a
+# cold build) and deliberately not the whole testthat suite: a lightweight
+# R session that sources just the few files this one test needs, with
+# only dplyr/magrittr/testthat/withr installed, keeps this job's own
+# fail-fast purpose intact.
 on:
   push:
     paths:
       - "rust/**"
       - ".github/workflows/rust-tests.yml"
+      - "R/prep_extraction.R"
+      - "R/microhaplot_extract_binary.R"
+      - "R/run_microhaplot_extract.R"
+      - "tests/testthat/test-prep-extraction-integration.R"
+      - "tests/testthat/fixtures/hapture-golden/**"
+      - "inst/extdata/sebastes_bam.tar.gz"
   pull_request:
     paths:
       - "rust/**"
       - ".github/workflows/rust-tests.yml"
+      - "R/prep_extraction.R"
+      - "R/microhaplot_extract_binary.R"
+      - "R/run_microhaplot_extract.R"
+      - "tests/testthat/test-prep-extraction-integration.R"
+      - "tests/testthat/fixtures/hapture-golden/**"
+      - "inst/extdata/sebastes_bam.tar.gz"
   workflow_dispatch:
 
 permissions:
@@ -51,3 +74,37 @@ jobs:
 
       - name: cargo test
         run: cargo test --all-targets
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install R packages test-prep-extraction-integration.R needs
+        run: install.packages(c("dplyr", "magrittr", "testthat", "withr"))
+        shell: Rscript {0}
+
+      # Repo root, not rust/microhaplot-extract (this job's default) --
+      # the R files/tests/fixtures below all live relative to the repo
+      # root. MICROHAPLOT_EXTRACT_BIN points find_microhaplot_extract_bin()
+      # straight at the binary cargo test just built, since
+      # system.file(package = "microhaplot") can't resolve anything here
+      # (the package itself is deliberately not installed -- see the
+      # job-level comment above).
+      - name: Run test-prep-extraction-integration.R
+        working-directory: .
+        env:
+          MICROHAPLOT_EXTRACT_BIN: ${{ github.workspace }}/rust/microhaplot-extract/target/debug/microhaplot-extract
+        run: |
+          library(dplyr)
+          library(magrittr)
+          library(testthat)
+          source("R/prep_extraction.R")
+          source("R/microhaplot_extract_binary.R")
+          source("R/run_microhaplot_extract.R")
+
+          result <- test_file("tests/testthat/test-prep-extraction-integration.R")
+          summary <- as.data.frame(result)
+          if (any(summary$failed > 0) || any(summary$error)) {
+            quit(status = 1)
+          }
+        shell: Rscript {0}

@@ -58,56 +58,9 @@ test_that("run_microhaplot_extract() surfaces the binary's own error on bad inpu
   expect_false(file.exists(file.path(out_dir, "all.summary")))
 })
 
-test_that("run_microhaplot_extract() matches the golden combined fixture on the sebastes BAM set", {
-  skip_if_not(extract_bin_available, "microhaplot-extract binary not built")
-  bin <- find_microhaplot_extract_bin()
-
-  work_dir <- withr::local_tempdir()
-  utils::untar(
-    system.file("extdata", "sebastes_bam.tar.gz", package = "microhaplot"),
-    exdir = work_dir
-  )
-
-  metadata <- utils::read.table(
-    file.path(work_dir, "sebastes_metadata.tsv"),
-    header = TRUE, sep = "\t", stringsAsFactors = FALSE
-  )
-  label_path <- file.path(work_dir, "label.txt")
-  build_prep_label_file(metadata, label_path)
-
-  out_dir <- file.path(work_dir, "intermed")
-
-  result <- run_microhaplot_extract(
-    label.path = label_path,
-    sam.path = work_dir,
-    vcf.path = file.path(work_dir, "sebastes.vcf"),
-    out.path = out_dir,
-    n.jobs = 4,
-    bin.path = bin
-  )
-
-  expect_s3_class(result, "tbl_df")
-  expect_named(
-    result,
-    c("group", "id", "locus", "haplo", "depth", "sum.Phred.C", "max.Phred.C")
-  )
-  expect_equal(nrow(result), 616)
-  expect_equal(length(unique(result$id)), 20)
-
-  # Canonicalize (sort) both sides the same way capture-golden-fixtures.sh
-  # does, and compare as whole rows -- row order isn't part of the pinned
-  # behavior (see tests/testthat/fixtures/hapture-golden/README.md).
-  actual_lines <- sort(do.call(paste, c(lapply(result, as.character), sep = "\t")))
-
-  golden_path <- testthat::test_path(
-    "fixtures", "hapture-golden", "sebastes-all.summary"
-  )
-  expected_lines <- sort(readLines(golden_path))
-
-  expect_equal(actual_lines, expected_lines)
-
-  # One completion marker per sample, alongside the combined output.
-  markers <- list.files(out_dir, pattern = "\\.summary$")
-  markers <- setdiff(markers, "all.summary")
-  expect_equal(length(markers), 20)
-})
+# The full-fixture golden-comparison test (sebastes BAM set vs.
+# tests/testthat/fixtures/hapture-golden/sebastes-all.summary) lives in
+# test-prep-extraction-integration.R instead of here -- that's the file
+# wayfinder ticket #35 wires into CI as the independent regression oracle,
+# so it's the one canonical copy of this specific assertion rather than a
+# duplicate maintained in two places.
