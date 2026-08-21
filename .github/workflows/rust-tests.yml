@@ -84,27 +84,14 @@ jobs:
         shell: Rscript {0}
 
       # Repo root, not rust/microhaplot-extract (this job's default) --
-      # the R files/tests/fixtures below all live relative to the repo
-      # root. MICROHAPLOT_EXTRACT_BIN points find_microhaplot_extract_bin()
+      # the script below, and everything it touches, lives relative to the
+      # repo root. MICROHAPLOT_EXTRACT_BIN points find_microhaplot_extract_bin()
       # straight at the binary cargo test just built, since
       # system.file(package = "microhaplot") can't resolve anything here
       # (the package itself is deliberately not installed -- see the
-      # job-level comment above).
+      # job-level comment above, and the script's own header).
       - name: Run test-prep-extraction-integration.R
         working-directory: .
         env:
           MICROHAPLOT_EXTRACT_BIN: ${{ github.workspace }}/rust/microhaplot-extract/target/debug/microhaplot-extract
-        run: |
-          library(dplyr)
-          library(magrittr)
-          library(testthat)
-          source("R/prep_extraction.R")
-          source("R/microhaplot_extract_binary.R")
-          source("R/run_microhaplot_extract.R")
-
-          result <- test_file("tests/testthat/test-prep-extraction-integration.R")
-          summary <- as.data.frame(result)
-          if (any(summary$failed > 0) || any(summary$error)) {
-            quit(status = 1)
-          }
-        shell: Rscript {0}
+        run: scripts/run-prep-extraction-integration-test.R

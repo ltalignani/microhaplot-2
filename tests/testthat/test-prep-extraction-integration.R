@@ -1,9 +1,11 @@
-test_that("run_microhaplot_extract() matches the golden fixtures on the sebastes BAM set", {
+extract_bin_available <- {
   bin <- find_microhaplot_extract_bin()
-  skip_if_not(
-    !is.na(bin) && nzchar(bin) && file.exists(bin),
-    "microhaplot-extract binary not built"
-  )
+  !is.na(bin) && nzchar(bin) && file.exists(bin)
+}
+
+test_that("run_microhaplot_extract() matches the golden fixtures on the sebastes BAM set", {
+  skip_if_not(extract_bin_available, "microhaplot-extract binary not built")
+  bin <- find_microhaplot_extract_bin()
 
   # testthat::test_path(), not system.file(package = "microhaplot") --
   # this test also runs in CI (wayfinder ticket #35) via a lightweight
