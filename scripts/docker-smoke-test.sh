@@ -10,8 +10,13 @@
 #   3. the `main` and `prep` services both respond on their ports,
 #   4. the `prep` service can run a real extraction over a bundled BAM+VCF
 #      dataset (proving samtools and Perl work inside the image),
-#   5. the resulting .rds is visible and loadable from the `main` service
-#      through the shared volume, without restarting any container.
+#   5. microhaplot-extract (wayfinder ticket #34) actually works inside the
+#      built image too — `validate` against a known-good BAM, and a real
+#      `extract` batch run whose combined output matches the golden
+#      fixture — even though nothing calls it in place of Perl yet,
+#   6. the resulting .rds from step 4 is visible and loadable from the
+#      `main` service through the shared volume, without restarting any
+#      container.
 #
 # CI runs this before publishing an image; it is also meant to be run
 # locally while developing the Dockerfile or compose file.
@@ -87,14 +92,30 @@ done
 # Step 3 only proves Shiny served a page. The server function does not run
 # until a browser opens a websocket, so an app that dies on its first line
 # still answers 200 — see scripts/smoke/app-loads.R.
-step "3b/5 Checking the Shiny app's own code loads in the image"
+step "3b/6 Checking the Shiny app's own code loads in the image"
 docker compose exec -T main Rscript - < scripts/smoke/app-loads.R
 
-step "4/5 Running a real BAM+VCF extraction in the prep service"
+step "4/6 Running a real BAM+VCF extraction in the prep service"
 docker compose exec -T -e SMOKE_RUN_LABEL="$SMOKE_RUN_LABEL" prep \
   bash -s < scripts/smoke/prep-extraction.sh
 
-step "5/5 Loading the produced .rds from the main service (no restart)"
+step "5/6 Checking microhaplot-extract works inside the built image"
+docker compose exec -T prep \
+  bash -s < scripts/smoke/microhaplot-extract-check.sh
+
+# The container step above wrote its combined output into the shared
+# volume; compare it here, on the host, against the same golden fixture
+# the Rust/R test suites already check it against — this is the "not just
+# that the image builds" half of ticket #34's acceptance criterion.
+actual=$(sort "$data_dir/microhaplot-extract-check/intermed/all.summary")
+expected=$(sort tests/testthat/fixtures/hapture-golden/sebastes-all.summary)
+if [ "$actual" != "$expected" ]; then
+  echo "microhaplot-extract's output inside the image doesn't match the golden fixture" >&2
+  exit 1
+fi
+echo "microhaplot-extract's output matches the golden fixture"
+
+step "6/6 Loading the produced .rds from the main service (no restart)"
 docker compose exec -T -e SMOKE_RUN_LABEL="$SMOKE_RUN_LABEL" main \
   Rscript - < scripts/smoke/main-verify.R
 
