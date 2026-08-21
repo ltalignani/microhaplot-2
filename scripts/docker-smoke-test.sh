@@ -64,16 +64,16 @@ trap cleanup EXIT
 step() { echo; echo "==> $*"; }
 
 if [ "${SKIP_BUILD:-0}" != "1" ]; then
-  step "1/5 Building ${IMAGE}:${MICROHAPLOT_VERSION}"
+  step "1/6 Building ${IMAGE}:${MICROHAPLOT_VERSION}"
   docker build -t "${IMAGE}:${MICROHAPLOT_VERSION}" .
 else
-  step "1/5 Skipping build, reusing ${IMAGE}:${MICROHAPLOT_VERSION}"
+  step "1/6 Skipping build, reusing ${IMAGE}:${MICROHAPLOT_VERSION}"
 fi
 
-step "2/5 Starting both services (data dir: ${data_dir})"
+step "2/6 Starting both services (data dir: ${data_dir})"
 docker compose up -d
 
-step "3/5 Waiting for both services to respond"
+step "3/6 Waiting for both services to respond"
 for port in "$MICROHAPLOT_MAIN_PORT" "$MICROHAPLOT_PREP_PORT"; do
   for attempt in $(seq 1 30); do
     code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/" || true)
