@@ -111,7 +111,6 @@ prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
   n.jobs = 1){
 
   run.label <- gsub(" +","_",run.label)
-  haptureDir <- system.file("perl", "hapture", package = "microhaplot")
 
   # Need to check whether all path and files exist
   if (!file.exists(sam.path)) stop("the path for 'sam.path' - ", sam.path, " does not exist")
@@ -127,26 +126,6 @@ prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
   n.jobs <- round(n.jobs)
   if(n.jobs<=0) stop("the n.jobs is expected to be positive integer")
 
-  # check whether perl is installed
-  tryCatch({system("perl -v", intern=TRUE); message("Perl is found in system")},
-           error= function(d) {
-             if(.Platform$OS.type == "windows") {
-               message("Perl is not found in system. Recommend installation from strawberryperl. Be sure to install version >=5.014")
-             }else {
-               message("Perl is not found in system. Recommend Installation from perl.org. Be sure to install version >=5.014")
-             }
-           })
-
-  # ensure that the perl's version is at least 5.014
-  perl.version <- system('perl -e "print $];"', intern=TRUE) %>% as.numeric
-  if(perl.version < 5.014) stop ("The version Perl found in your current system is old-dated/incompatible. Microhaplot requires Perl v. >=5.014.")
-
-  # the perl script hapture should display any warning if the label field contains any missing or invalid elements
-
-  runHap.name <- ifelse(.Platform$OS.type == "windows", "runHapture.bat", "runHapture.sh")
-
-  if (file.exists(file.path(out.path, runHap.name))) file.remove(file.path(out.path, runHap.name))
-
   if (file.exists(file.path(out.path,"intermed"))) file.remove(
     list.files(file.path(out.path, "intermed"),
                #pattern = paste0(run.label, "_*.summary"),
@@ -154,113 +133,13 @@ prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
 
   if (!file.exists(file.path(out.path,"intermed"))) dir.create(file.path(out.path,"intermed"))
 
-  summary.path <- file.path(out.path, "intermed", "all.summary")
-
-  if(file.exists(summary.path)) file.remove(summary.path)
-
-  # catch any problem in label file
-  read.label <- tryCatch(read.table(label.path,sep = "\t",stringsAsFactors = FALSE), error = function(c) {
-    c$message <- paste0(c$message, " (in ", label.path , ")")
-    stop(c)
-  })
-  if (dim(read.label)[2] < 3) stop(label.path, "contains less than 3 columns.")
-
-  # BAM support: hapture.pl only ever reads its SAM input as a forward,
-  # line-by-line stream, so a BAM file can be fed to it by streaming
-  # `samtools view -h` through Perl's piped-open idiom (a two-argument
-  # `open` whose expression ends in "|" runs a shell command and reads its
-  # stdout) instead of materializing a SAM file on disk. This needs no
-  # change to hapture.pl itself, only to how the -s argument is built here.
-  is.bam.row <- tolower(tools::file_ext(read.label[[1]])) == "bam"
-
-  if (any(is.bam.row)) {
-    if (.Platform$OS.type == "windows") {
-      stop("BAM input is not yet supported on Windows. Please convert your BAM files to SAM before calling prepHaplotFiles().")
-    }
-    if (!nzchar(Sys.which("samtools"))) {
-      stop("BAM input detected in the label file, but 'samtools' was not found on your PATH. Install samtools (http://www.htslib.org/) to use BAM files with prepHaplotFiles().")
-    }
-  }
-
-  # gzipped VCF support: same piped-open idiom as BAM above (hapture.pl's
-  # `open VCF, $opt{v}` doesn't decompress gzip on its own, but a path
-  # string ending in "|" runs it as a shell command and streams stdout).
-  is.gz.vcf <- tolower(tools::file_ext(vcf.path)) == "gz"
-  if (is.gz.vcf) {
-    if (.Platform$OS.type == "windows") {
-      stop("Gzipped VCF input is not yet supported on Windows. Please decompress the VCF before calling prepHaplotFiles().")
-    }
-    if (!nzchar(Sys.which("gunzip"))) {
-      stop("A gzipped VCF was supplied, but 'gunzip' was not found on your PATH. Install gzip/gunzip to use a .vcf.gz file with prepHaplotFiles().")
-    }
-  }
-  vcf.arg <- if (is.gz.vcf) paste0('"gunzip -c ', vcf.path, ' |"') else vcf.path
-
-  garb <- sapply(1:nrow(read.label), function(i) {
-
-    line <- read.label[i,] %>% unlist
-    if (!file.exists(file.path(sam.path,line[1]))) stop("the alignment file, ", file.path(sam.path,line[1]), ", does not exist")
-
-    sam.arg <- if (is.bam.row[i]) {
-      paste0('"samtools view -h ', sam.path, "/", line[1], ' |"')
-    } else {
-      paste0(sam.path, "/", line[1])
-    }
-
-    if(.Platform$OS.type == "windows") {
-      run.perl.script <- paste0("perl ", haptureDir,
-                                " -v ", vcf.path, " ",
-                                " -s ", sam.path, "\\", line[1],
-                                " -i ", line[2],
-                                " -g ", line[3], " > ",
-                                out.path, "\\intermed\\", run.label, "_", line[2],"_",i,".summary")
-    } else {
-      wait.ln <- ifelse(i %% n.jobs == 0," wait;"," ")
-      run.perl.script <- paste0("perl ", haptureDir,
-                                " -v ", vcf.arg,
-                                " -s ", sam.arg,
-                                " -i ", line[2],
-                                " -g ", line[3], " > ",
-                                out.path, "/intermed/", run.label, "_", line[2],"_",i,".summary &",
-                                wait.ln)
-    }
-
-    write(run.perl.script,
-      file = file.path(out.path, runHap.name),
-      append = TRUE)
-  })
-
-  message("...running Hapture.pl to extract haplotype information (takes a while)...")
-
-  if(.Platform$OS.type != "windows") {
-
-    write(paste0("wait;"),
-    file = file.path(out.path, runHap.name),
-    append = TRUE)
-
-    concat.cmd <- paste0("cat ",out.path, "/intermed/", run.label, "_", "*.summary"," > ",summary.path)
-
-    # just in case if the user has loads of sam files and running out of buffer
-    if (nrow(read.label) > 100) {
-      concat.cmd <- paste0("find ",out.path, "/intermed -name ", run.label, "_", "*.summary",
-                            "| while read F; do cat ${F} >>",summary.path, ";done")
-    }
-
-    write(concat.cmd,
-          file = file.path(out.path, runHap.name),
-          append = TRUE)
-
-    system(paste0("bash ",out.path,"/runHapture.sh"))
-  } else {
-    concat.cmd <- paste0("type ",out.path, "\\intermed\\", run.label, "_", "*.summary"," > ",summary.path)
-
-    write(concat.cmd,
-          file = file.path(out.path, runHap.name),
-          append = TRUE)
-
-
-    system(file.path(out.path, runHap.name))
-  }
+  # prepHaplotFiles()'s Perl-invocation-and-concatenation logic (wayfinder
+  # ticket #27) -- the seam a future microhaplot-extract cutover (ticket
+  # #36) swaps out, without the rest of this function changing.
+  summary.path <- run_hapture_perl_pipeline(
+    run.label = run.label, sam.path = sam.path, label.path = label.path,
+    vcf.path = vcf.path, out.path = out.path, n.jobs = n.jobs
+  )
 
   haplo.sum <- read.table(summary.path, stringsAsFactors = FALSE, sep = "\t") %>% dplyr::as_tibble()
 
