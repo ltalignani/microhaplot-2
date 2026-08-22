@@ -8,12 +8,12 @@
 #   1. the image builds,
 #   2. `docker compose up` starts both services without error,
 #   3. the `main` and `prep` services both respond on their ports,
-#   4. the `prep` service can run a real extraction over a bundled BAM+VCF
-#      dataset (proving samtools and Perl work inside the image),
-#   5. microhaplot-extract (wayfinder ticket #34) actually works inside the
-#      built image too — `validate` against a known-good BAM, and a real
-#      `extract` batch run whose combined output matches the golden
-#      fixture — even though nothing calls it in place of Perl yet,
+#   4. the `prep` service can run a real prepHaplotFiles() extraction over a
+#      bundled BAM+VCF dataset (microhaplot-extract, natively -- no Perl or
+#      samtools in this image since the cutover, wayfinder ticket #36),
+#   5. microhaplot-extract's own CLI works inside the built image too --
+#      `validate` against a known-good BAM, and a real `extract` batch run
+#      whose combined output matches the golden fixture,
 #   6. the resulting .rds from step 4 is visible and loadable from the
 #      `main` service through the shared volume, without restarting any
 #      container.

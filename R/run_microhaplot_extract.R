@@ -4,14 +4,18 @@
 #' ticket #30): one invocation processes every sample listed in
 #' \code{label.path} against \code{vcf.path}, in parallel, and returns the
 #' combined output in the same shape \code{prepHaplotFiles()}'s existing
-#' post-concatenation code expects. Not yet wired into
-#' \code{prepHaplotFiles()} -- callable and testable on its own.
+#' post-concatenation code expected of the Perl pipeline. This is
+#' \code{prepHaplotFiles()}'s extraction call since the microhaplot-extract
+#' cutover (wayfinder ticket #36).
 #'
 #' @param label.path string. Path to the 3-column, headerless label file
 #'   (see \code{build_prep_label_file()}). Required.
 #' @param sam.path string. Directory containing the alignment (BAM) files
 #'   named in the label file's first column. Required.
-#' @param vcf.path string. Path to the VCF file. Required.
+#' @param vcf.path string. Path to the VCF file. Plain or gzip-compressed
+#'   (\code{.vcf.gz} is decompressed to a temp file before
+#'   \code{microhaplot-extract} reads it, which has no gzip support of its
+#'   own). Required.
 #' @param out.path string. Directory to write \code{all.summary} and the
 #'   per-sample completion markers into (typically an \code{intermed/}
 #'   directory). Created if it doesn't already exist. Required.
@@ -45,6 +49,26 @@ run_microhaplot_extract <- function(label.path, sam.path, vcf.path, out.path,
   }
   n.jobs <- round(n.jobs)
   if (n.jobs <= 0) stop("the n.jobs is expected to be positive integer")
+
+  # microhaplot-extract reads its VCF as plain text -- no gzip
+  # auto-detection, unlike R's own read.table()/file() connections.
+  # Decompress once here, the same shell-level idiom hapture.pl's R-side
+  # glue already used for gzipped VCF input before the microhaplot-extract
+  # cutover (wayfinder ticket #36).
+  if (identical(tolower(tools::file_ext(vcf.path)), "gz")) {
+    if (!nzchar(Sys.which("gunzip"))) {
+      stop(
+        "A gzipped VCF was supplied, but 'gunzip' was not found on your ",
+        "PATH. Install gzip/gunzip to use a .vcf.gz file with prepHaplotFiles()."
+      )
+    }
+    decompressed.vcf <- tempfile(fileext = ".vcf")
+    status <- system2("gunzip", c("-c", shQuote(vcf.path)), stdout = decompressed.vcf)
+    if (!identical(status, 0L)) {
+      stop("failed to decompress the gzipped VCF ", vcf.path)
+    }
+    vcf.path <- decompressed.vcf
+  }
 
   # A non-zero exit is an expected, explicitly-handled outcome here (checked
   # right below), not a warning-worthy surprise -- suppresses system2()'s own
@@ -97,14 +121,13 @@ run_microhaplot_extract <- function(label.path, sam.path, vcf.path, out.path,
 #' Validate BAM files via microhaplot-extract's validate subcommand
 #'
 #' Internal wrapper (wayfinder ticket #31) around \code{microhaplot-extract
-#' validate}, which replaces the field prep wizard's \code{samtools
+#' validate}, which replaces the field prep wizard's former \code{samtools
 #' quickcheck} + \code{samtools view -H} shell-outs with one call per file
-#' to the already-built binary. Returns results in the same shape
-#' \code{.check_bam_integrity()} (\code{R/prep_validation.R}) already
-#' produces looping over multiple paths with two \code{samtools} calls per
-#' file, so swapping the implementation later is a small, localized change.
-#' Not yet wired into \code{prep_validation.R} -- callable and testable on
-#' its own.
+#' to the already-built binary. Returns results in the same shape the
+#' pre-cutover \code{.check_bam_integrity()} produced looping over multiple
+#' paths with two \code{samtools} calls per file. This is
+#' \code{validate_prep_inputs()}'s integrity check since the
+#' microhaplot-extract cutover (wayfinder ticket #36).
 #'
 #' @param bam.paths character vector. Paths to the BAM files to check. Required.
 #' @param bin.path string. Optional. Explicit path to the

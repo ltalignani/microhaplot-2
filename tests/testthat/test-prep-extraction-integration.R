@@ -3,9 +3,8 @@ extract_bin_available <- {
   !is.na(bin) && nzchar(bin) && file.exists(bin)
 }
 
-test_that("run_microhaplot_extract() matches the golden fixtures on the sebastes BAM set", {
+test_that("prepHaplotFiles() matches the golden fixtures (sebastes BAM)", {
   skip_if_not(extract_bin_available, "microhaplot-extract binary not built")
-  bin <- find_microhaplot_extract_bin()
 
   # testthat::test_path(), not system.file(package = "microhaplot") --
   # this test also runs in CI (wayfinder ticket #35) via a lightweight
@@ -28,25 +27,32 @@ test_that("run_microhaplot_extract() matches the golden fixtures on the sebastes
   label_path <- file.path(work_dir, "label.txt")
   build_prep_label_file(metadata, label_path)
 
-  out_dir <- file.path(work_dir, "intermed")
+  out_dir <- withr::local_tempdir()
+  # prepHaplotFiles() only needs app.path to already exist -- the Shiny app
+  # content mvShinyHaplot() would normally copy there is irrelevant to its
+  # own extraction/post-processing logic, and mvShinyHaplot() itself needs
+  # the package registered via system.file(), which this lightweight
+  # harness deliberately avoids (see the comment above).
+  app_dir <- withr::local_tempdir()
 
-  # The R-side helper from ticket #30 -- not prepHaplotFiles(), which still
-  # drives the Perl pipeline until the cutover ticket (#36) switches its
-  # default path.
-  result <- run_microhaplot_extract(
-    label.path = label_path,
+  # The real public entry point (wayfinder ticket #36's cutover): no
+  # Perl, no samtools -- prepHaplotFiles() calls microhaplot-extract
+  # directly via run_microhaplot_extract().
+  result <- prepHaplotFiles(
+    run.label = "sebastes_integration",
     sam.path = work_dir,
+    label.path = label_path,
     vcf.path = file.path(work_dir, "sebastes.vcf"),
     out.path = out_dir,
-    n.jobs = 4,
-    bin.path = bin
+    app.path = app_dir,
+    n.jobs = 4
   )
 
+  raw_cols <- c("group", "id", "locus", "haplo", "depth",
+                "sum.Phred.C", "max.Phred.C")
+
   expect_s3_class(result, "tbl_df")
-  expect_named(
-    result,
-    c("group", "id", "locus", "haplo", "depth", "sum.Phred.C", "max.Phred.C")
-  )
+  expect_true(all(raw_cols %in% names(result)))
   expect_equal(length(unique(result$id)), 20)
 
   # The independent oracle this test exists for: hapture.pl's own recorded
@@ -54,9 +60,16 @@ test_that("run_microhaplot_extract() matches the golden fixtures on the sebastes
   # #19), canonicalized (sorted) the same way capture-golden-fixtures.sh
   # does -- not a round-trip check against whatever this run just wrote to
   # disk (see that fixture directory's own README.md for why row order
-  # isn't part of the pinned behavior).
-  actual_lines <- sort(do.call(paste, c(lapply(result, as.character), sep = "\t")))
-  golden_path <- testthat::test_path("fixtures", "hapture-golden", "sebastes-all.summary")
+  # isn't part of the pinned behavior). Only the raw extraction columns are
+  # compared -- allele.balance/rank are prepHaplotFiles()'s own downstream
+  # dplyr post-processing, unchanged by this ticket and not part of the
+  # golden fixture's own schema.
+  actual_lines <- sort(do.call(
+    paste, c(lapply(result[raw_cols], as.character), sep = "\t")
+  ))
+  golden_path <- testthat::test_path(
+    "fixtures", "hapture-golden", "sebastes-all.summary"
+  )
   expected_lines <- sort(readLines(golden_path))
 
   expect_equal(actual_lines, expected_lines)
@@ -64,7 +77,8 @@ test_that("run_microhaplot_extract() matches the golden fixtures on the sebastes
   # One completion marker per sample, alongside the combined output --
   # the shape the field prep wizard's file-counting progress poller
   # expects (inst/shiny/microhaplot-prep/server.R), unchanged by this test.
-  markers <- list.files(out_dir, pattern = "\\.summary$")
+  intermed_dir <- file.path(out_dir, "intermed")
+  markers <- list.files(intermed_dir, pattern = "\\.summary$")
   markers <- setdiff(markers, "all.summary")
   expect_equal(length(markers), 20)
 })

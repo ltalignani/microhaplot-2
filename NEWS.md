@@ -15,6 +15,12 @@
 
 ## Changes
 
+* **`prepHaplotFiles()` no longer requires Perl or `samtools`.** Haplotype
+  extraction and BAM validation now go through a bundled companion binary,
+  `microhaplot-extract`, instead of shelling out to `hapture.pl` and
+  `samtools`. Extraction only accepts BAM input now (convert SAM files to
+  BAM first, e.g. with `samtools view -b`); everything else about
+  `prepHaplotFiles()`'s interface is unchanged.
 * **The raw data source is gone from Population Genetics.** It was the
   default, and on unfiltered data an individual's two top-ranked haplotypes
   differ by construction — observed heterozygosity came out at 1 almost

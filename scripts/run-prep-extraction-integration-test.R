@@ -22,6 +22,7 @@ library(testthat)
 source("R/prep_extraction.R")
 source("R/microhaplot_extract_binary.R")
 source("R/run_microhaplot_extract.R")
+source("R/runHaplot.R")
 
 result <- test_file("tests/testthat/test-prep-extraction-integration.R")
 summary <- as.data.frame(result)

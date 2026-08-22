@@ -3,9 +3,9 @@ HEX_COLOR_RE <- "^#[0-9A-Fa-f]{6}$"
 #' Validate inputs for the field genotyping prep app
 #'
 #' Runs the upfront batch validation described in the field-prep-app spec:
-#' TSV schema rules, BAM existence, BAM integrity (\code{samtools
-#' quickcheck}), and VCF/BAM chromosome-name agreement. Pure function, no
-#' Shiny dependency.
+#' TSV schema rules, BAM existence, BAM integrity (\code{microhaplot-extract
+#' validate}, since the cutover in wayfinder ticket #36), and VCF/BAM
+#' chromosome-name agreement. Pure function, no Shiny dependency.
 #'
 #' @param folder string. Path to the directory containing the BAM files. Required.
 #' @param tsv data.frame. Parsed metadata TSV with columns \code{bam_file},
@@ -43,16 +43,18 @@ validate_prep_inputs <- function(folder, tsv, vcf_path) {
     existing_paths <- bam_paths[file.exists(bam_paths)]
 
     if (length(existing_paths) > 0) {
-      if (!nzchar(Sys.which("samtools"))) {
-        errors <- c(errors, "'samtools' was not found on your PATH; it is required to validate BAM files.")
+      bin <- tryCatch(resolve_microhaplot_extract_bin(), error = function(e) NA_character_)
+      if (is.na(bin)) {
+        errors <- c(errors, "microhaplot-extract binary not found; it is required to validate BAM files.")
       } else {
-        # One pass over the BAM files: quickcheck each for truncation, and
-        # (only for files that pass) collect its @SQ reference names in the
-        # same iteration — no separate second pass over the file list.
-        integrity <- .check_bam_integrity(existing_paths)
+        # One pass over the BAM files: microhaplot-extract validate checks
+        # each for truncation, and (only for files that pass) collects its
+        # @SQ reference names in the same call — no separate second pass
+        # over the file list.
+        integrity <- check_bam_integrity_rust(existing_paths, bin.path = bin)
         errors <- c(errors, integrity$errors)
         if (length(integrity$errors) == 0) {
-          passes <- c(passes, "No truncated BAM files detected (samtools quickcheck)")
+          passes <- c(passes, "No truncated BAM files detected (microhaplot-extract validate)")
         }
 
         n_intact <- length(existing_paths) - length(integrity$errors)
@@ -103,32 +105,9 @@ validate_prep_inputs <- function(folder, tsv, vcf_path) {
   list(errors = errors)
 }
 
-.bam_sq_names <- function(path) {
-  header <- system2("samtools", c("view", "-H", shQuote(path)), stdout = TRUE)
-  sq_lines <- grep("^@SQ", header, value = TRUE)
-  sq_fields <- strsplit(sq_lines, "\t")
-  sn_fields <- vapply(sq_fields, function(f) f[startsWith(f, "SN:")][1], character(1))
-  sub("^SN:", "", sn_fields)
-}
-
-# One pass over bam_paths: samtools quickcheck for truncation, and (only
-# for files that pass) its @SQ reference names in the same iteration.
-.check_bam_integrity <- function(bam_paths) {
-  errors <- character()
-  bam_refs <- character()
-  for (path in bam_paths) {
-    status <- system2("samtools", c("quickcheck", shQuote(path)), stdout = FALSE, stderr = FALSE)
-    if (status != 0) {
-      errors <- c(errors, sprintf("%s appears truncated or corrupted (samtools quickcheck failed).", basename(path)))
-    } else {
-      bam_refs <- union(bam_refs, .bam_sq_names(path))
-    }
-  }
-  list(errors = errors, bam_refs = bam_refs)
-}
-
 # Pure comparison, no file I/O: which VCF CHROM values are absent from the
-# union of BAM reference names already collected by .check_bam_integrity().
+# union of BAM reference names already collected by check_bam_integrity_rust()
+# (R/run_microhaplot_extract.R).
 .compare_chromosomes <- function(vcf_path, bam_refs, n_bam_files) {
   vcf_chroms <- unique(as.character(utils::read.table(vcf_path, stringsAsFactors = FALSE)[[1]]))
   missing_chroms <- setdiff(vcf_chroms, bam_refs)

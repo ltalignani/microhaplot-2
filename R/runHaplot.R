@@ -62,16 +62,18 @@ mvShinyHaplot <- function(path) {
 
 #' Extracts haplotype from alignment reads.
 #'
-#' The function \code{microhaplot} extracts haplotype from sequence alignment files through perl script \code{hapture} and returns a summary table of the read depth and read quality associate with haplotype.
+#' The function \code{microhaplot} extracts haplotype from BAM alignment
+#' files via the \code{microhaplot-extract} binary and returns a summary
+#' table of the read depth and read quality associated with each haplotype.
 #'
 #' @param run.label character vector. Run label to be used to display in haPLOType. Required
-#' @param sam.path string. Directory path folder containing all sequence alignment files (SAM). Required
-#' @param label.path string. Label file path. This customized label file is a tab-separate file that contains entries of SAM file name, individual ID, and group label. Required
-#' @param vcf.path string. VCF file path. Required
+#' @param sam.path string. Directory path folder containing all alignment files (BAM). Required
+#' @param label.path string. Label file path. This customized label file is a tab-separate file that contains entries of BAM file name, individual ID, and group label. Required
+#' @param vcf.path string. VCF file path (plain or gzip-compressed). Required
 #' @param out.path string. Optional. If not specified, the intermediate files are created under \code{TEMPDIR}, with the assumption that directory is granted for written permission.
 #' @param add.filter boolean. Optional. If true, this removes any haplotype with unknown and deletion alignment characters i.e. "*" and "_", removes any locus with large number of haplotypes ( # > 40) , and remove any locus with fewer than half of the total individuals.
 #' @param app.path string. Path to shiny haPLOType app. Optional. If not specified, the path is default to \code{TEMPDIR}.
-#' @param n.jobs positive integer. Number of SAM files to be parallel processed. Optional. This multithread is only available for non Window OS. Recommend two times the number of processors/core.
+#' @param n.jobs positive integer. Number of alignment files to process concurrently. Optional.
 #' @return This function returns a dataframe of 9 columns i.e group, id, locus, haplotype, depth, sum of Phred score, max of Phred score, allele balance and haplotype rank from highest to lowest read depth. This dataframe will also be saved in \code{out.path}.
 #' @export
 #' @examples
@@ -80,29 +82,24 @@ mvShinyHaplot <- function(path) {
 #'
 #' sam.path <- tempdir()
 #' untar(system.file("extdata",
-#'                   "sebastes_sam.tar.gz",
+#'                   "sebastes_bam.tar.gz",
 #'                   package="microhaplot"),
 #'       exdir = sam.path)
 #'
-#'
+#' metadata <- read.delim(file.path(sam.path, "sebastes_metadata.tsv"))
 #' label.path <- file.path(sam.path, "label.txt")
+#' build_prep_label_file(metadata, label.path)
 #' vcf.path <- file.path(sam.path, "sebastes.vcf")
 #'
 #' mvShinyHaplot(tempdir())
 #' app.path <- file.path(tempdir(), "microhaplot")
 #'
-#' # retrieve system Perl version number
-#' perl.version <- as.numeric(system('perl -e "print $];"', intern=TRUE))
-#'
-#' if (perl.version >= 5.014) {
 #' haplo.read.tbl <- prepHaplotFiles(run.label = run.label,
 #'                             sam.path = sam.path,
 #'                             out.path = tempdir(),
 #'                             label.path = label.path,
 #'                             vcf.path = vcf.path,
 #'                             app.path = app.path)
-#' }else {
-#' message("Perl version is outdated. Must >= 5.014.")}
 #'
 prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
   out.path=tempdir(),
@@ -126,24 +123,25 @@ prepHaplotFiles <- function(run.label, sam.path, label.path, vcf.path,
   n.jobs <- round(n.jobs)
   if(n.jobs<=0) stop("the n.jobs is expected to be positive integer")
 
-  if (file.exists(file.path(out.path,"intermed"))) file.remove(
-    list.files(file.path(out.path, "intermed"),
-               #pattern = paste0(run.label, "_*.summary"),
-               full.names=TRUE))
+  intermed.path <- file.path(out.path, "intermed")
 
-  if (!file.exists(file.path(out.path,"intermed"))) dir.create(file.path(out.path,"intermed"))
+  if (file.exists(intermed.path)) file.remove(
+    list.files(intermed.path, full.names=TRUE))
 
-  # prepHaplotFiles()'s Perl-invocation-and-concatenation logic (wayfinder
-  # ticket #27) -- the seam a future microhaplot-extract cutover (ticket
-  # #36) swaps out, without the rest of this function changing.
-  summary.path <- run_hapture_perl_pipeline(
-    run.label = run.label, sam.path = sam.path, label.path = label.path,
-    vcf.path = vcf.path, out.path = out.path, n.jobs = n.jobs
+  if (!file.exists(intermed.path)) dir.create(intermed.path)
+
+  # microhaplot-extract (wayfinder tickets #28-#35), since the cutover in
+  # ticket #36: one call extracts every sample in the label file, in
+  # parallel, against vcf.path, replacing hapture.pl's per-sample
+  # shell-script generation entirely. No samtools/gunzip shell-outs here
+  # any more -- BAM decoding is native, and run_microhaplot_extract() shims
+  # gzipped VCF input on its own.
+  message("...running microhaplot-extract to extract haplotype information (takes a while)...")
+
+  haplo.sum <- run_microhaplot_extract(
+    label.path = label.path, sam.path = sam.path, vcf.path = vcf.path,
+    out.path = intermed.path, n.jobs = n.jobs
   )
-
-  haplo.sum <- read.table(summary.path, stringsAsFactors = FALSE, sep = "\t") %>% dplyr::as_tibble()
-
-  colnames(haplo.sum) <- c("group", "id", "locus", "haplo", "depth", "sum.Phred.C", "max.Phred.C")
 
   num.id <- length(unique(haplo.sum$id))
 

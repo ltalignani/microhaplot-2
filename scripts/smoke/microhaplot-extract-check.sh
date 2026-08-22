@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Runs *inside* the `prep` container (piped in via `docker compose exec -T
-# prep bash -s`). Proves microhaplot-extract (wayfinder tickets #28-#34)
-# actually works inside the fully-built image, not just that the image
-# builds: a real `validate` call against a known-good BAM, and a real
+# prep bash -s`). Proves microhaplot-extract's own CLI (wayfinder tickets
+# #28-#36) actually works inside the fully-built image, not just that the
+# image builds: a real `validate` call against a known-good BAM, and a real
 # `extract` batch run over the package's own bundled sebastes BAM fixture,
 # written into the shared volume so the host-side smoke test script can
-# diff it against the golden fixture. Independent of, and doesn't touch,
-# the Perl/samtools pipeline prep-extraction.sh already exercises.
+# diff it against the golden fixture. This calls the binary directly;
+# prep-extraction.sh exercises the same binary indirectly, through
+# prepHaplotFiles()'s own R-level wrapper.
 set -euo pipefail
 
 work=$HOME/microhaplot-extract-check

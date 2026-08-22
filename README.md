@@ -154,9 +154,9 @@ It walks through five steps:
     is available to download directly from this step.
 3.  **Validate** — before anything is extracted, the app checks that
     every BAM referenced in your TSV exists in the selected folder, that
-    none of your BAM files are truncated or corrupted (via `samtools
-    quickcheck`), and that your VCF's chromosome names match your BAM
-    files' reference names. Every problem found is shown at once.
+    none of your BAM files are truncated or corrupted, and that your
+    VCF's chromosome names match your BAM files' reference names. Every
+    problem found is shown at once.
 4.  **Extract** — once validation passes, extraction runs in the
     background (your browser stays responsive) with a live progress bar,
     calling the same `prepHaplotFiles` used from the R console — not a
@@ -165,9 +165,8 @@ It walks through five steps:
     `~/Shiny/microhaplot` and their paths are shown so you know exactly
     where to find them. Open the main app to explore the result.
 
-The wizard takes BAM files only. If your alignments are SAM, either
-convert them (`samtools view -b`) or use `prepHaplotFiles` from R, which
-accepts both.
+The wizard takes BAM files only. If your alignments are SAM, convert
+them to BAM first (e.g. `samtools view -b`).
 
 ## Example data
 
@@ -190,22 +189,14 @@ If you prefer to work from an R console, or you're on a system where
 Docker isn't available (an HPC cluster, for example), install the package
 directly.
 
-### Required Perl dependency
+### The microhaplot-extract binary
 
-You need Perl (version \>5.014) installed on your OS.
-For Windows users, we recommend installing it via
-<http://strawberryperl.com/>.
-For Mac and Linux users, Perl can be downloaded from
-<https://www.perl.org/get.html>
-
-### Required samtools dependency (BAM input only)
-
-If you plan to use BAM files (rather than SAM files) with
-`prepHaplotFiles`, you also need `samtools` installed and available on
-your `PATH`. It's not required if you only ever use SAM files. Install it
-from <http://www.htslib.org/> or via your OS package manager (e.g.
-`brew install samtools`, `apt install samtools`). BAM input via
-`samtools` streaming is supported on macOS and Linux only, not Windows.
+`prepHaplotFiles()` and the field prep wizard's validation both call a
+small companion binary, `microhaplot-extract`, for the actual BAM
+decoding and haplotype extraction — no Perl, no `samtools`, nothing else
+to install. On macOS (arm64/x86_64) or Linux (x86_64/arm64), the correct
+prebuilt binary is downloaded automatically and cached on first use.
+Windows has no native build; use the Docker route instead.
 
 **Mac users: remember to install [XQuartz](https://www.xquartz.org/)
 when upgrading macOS to a new major version.**

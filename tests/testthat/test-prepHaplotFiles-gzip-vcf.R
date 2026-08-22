@@ -1,26 +1,32 @@
 test_that("prepHaplotFiles accepts a gzipped VCF and produces the same result as the plain VCF", {
   skip_if_not(nzchar(Sys.which("gunzip")), "gunzip not available")
 
-  sam.dir <- withr::local_tempdir()
+  bam.dir <- withr::local_tempdir()
   utils::untar(
-    system.file("extdata", "sebastes_sam.tar.gz", package = "microhaplot"),
-    exdir = sam.dir
+    system.file("extdata", "sebastes_bam.tar.gz", package = "microhaplot"),
+    exdir = bam.dir
   )
-  vcf.path <- file.path(sam.dir, "sebastes.vcf")
+  vcf.path <- file.path(bam.dir, "sebastes.vcf")
   vcf.gz.path <- paste0(vcf.path, ".gz")
   system2("gzip", c("-k", vcf.path))
 
   app.dir <- withr::local_tempdir()
   mvShinyHaplot(app.dir)
   app.path <- file.path(app.dir, "microhaplot")
-  label.path <- file.path(sam.dir, "label.txt")
+
+  metadata <- utils::read.table(
+    file.path(bam.dir, "sebastes_metadata.tsv"),
+    header = TRUE, sep = "\t", stringsAsFactors = FALSE
+  )
+  label.path <- file.path(bam.dir, "label.txt")
+  build_prep_label_file(metadata, label.path)
 
   res.plain <- prepHaplotFiles(
-    run.label = "plain_vcf", sam.path = sam.dir, label.path = label.path,
+    run.label = "plain_vcf", sam.path = bam.dir, label.path = label.path,
     vcf.path = vcf.path, out.path = withr::local_tempdir(), app.path = app.path
   )
   res.gz <- prepHaplotFiles(
-    run.label = "gz_vcf", sam.path = sam.dir, label.path = label.path,
+    run.label = "gz_vcf", sam.path = bam.dir, label.path = label.path,
     vcf.path = vcf.gz.path, out.path = withr::local_tempdir(), app.path = app.path
   )
 
@@ -31,4 +37,3 @@ test_that("prepHaplotFiles accepts a gzipped VCF and produces the same result as
     ignore_attr = TRUE
   )
 })
-

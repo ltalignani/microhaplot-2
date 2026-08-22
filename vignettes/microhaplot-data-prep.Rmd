@@ -109,7 +109,7 @@ to work for the specialized task of extracting and analyzing microhaplotypes.
 
 The starting point for `microhaplot` requires:
 
-1.  A SAM or BAM file of reads aligned to the reference sequences for each amplicon.
+1.  A BAM file of reads aligned to the reference sequences for each amplicon.
 2. A VCF file whose contents define the positions in each reference sequence from which
 you want to extract variants into microhaplotypes.  Note that the *individuals* that appear
 in the VCF file need not be the same ones whose reads appear in the assemblies.  The VCF
@@ -117,26 +117,18 @@ is merely used as a way of defining positions to extract. Still, since the conte
 is based on the variant positions listed in the VCF file, it is crucial for the VCF file
 to only contain highly reliable variant sites.
 
-### Using BAM files directly
+### BAM files only
 
-If you already have your reads aligned as BAM files (e.g. straight out of `bwa mem` and
-`samtools sort`), you don't need to convert them to SAM yourself first. `prepHaplotFiles()`
-accepts a mix of `.sam` and `.bam` files in the same run — just list your BAM files in
-`label.path` (a tab-separated file of alignment-file name, individual ID, and group label,
-one row per sample — see `?prepHaplotFiles`) exactly as you would SAM files, and each file's
-extension (`.sam` or `.bam`, case-insensitive) decides how it's read. BAM files don't need a
-`.bai` index.
+`prepHaplotFiles()` reads BAM files directly — decoding them natively via
+the bundled `microhaplot-extract` binary, with no `samtools` (or any other
+external tool) required. List your BAM files in `label.path` (a
+tab-separated file of alignment-file name, individual ID, and group
+label, one row per sample — see `?prepHaplotFiles`). BAM files don't need
+a `.bai` index.
 
-This requires `samtools` to be installed and available on your `PATH` — `prepHaplotFiles()`
-checks for it up front and stops with a clear error if it's missing, but only when at least
-one `.bam` file is present in your label file; if you're only using `.sam` files, `samtools`
-isn't required at all.
-
-BAM input is not currently supported on Windows when calling `prepHaplotFiles()`
-directly; Windows users should either convert their BAM files to SAM first, or
-run the extraction under Docker (see the *Extracting haplotypes with Docker*
-vignette), where the restriction does not apply — the container is Linux inside
-whatever the host OS is.
+If your alignments are still in SAM format (e.g. straight out of `bwa
+mem`, before `samtools sort`), convert them to BAM first — e.g. `samtools
+view -bhS` followed by `samtools sort`, as in the mapping example below.
 
 We describe here the workflow that we use to get these two necessary files from the
 short-read amplicon sequencing data that come off our Illumina Mi-seq.  This workflow can
@@ -280,10 +272,9 @@ After the above is done, the file `satro384_noMNP_noComplex_noPriors.vcf` can be
 sure that everything in it has a solid SNP.  Then that file is used with the function
 `prepHaplotFiles` to extract haplotypes from the aligned reads in the `map` directory.
 
-Two example datasets drawn from an actual GT-seq rockfish run ship with the
-package, in `inst/extdata`: `sebastes_sam.tar.gz` (SAM files plus the VCF and a
-label file, used below) and `sebastes_bam.tar.gz` (the same samples as BAM,
-with a metadata TSV, used by the Docker wizard).
+An example dataset drawn from an actual GT-seq rockfish run ships with the
+package, in `inst/extdata`: `sebastes_bam.tar.gz` (BAM files, a VCF, and a
+metadata TSV — the same fixture the Docker wizard uses).
 
 If you would rather not call this function yourself, the *Extracting
 haplotypes with Docker* vignette covers the same step through a guided
@@ -291,19 +282,20 @@ wizard, with nothing to install beyond Docker Desktop.
 
 
 ```{r runHaplot, eval=FALSE}
- 
+
 library(microhaplot)
 
 run.label <- "sebastes"
 
 sam.path <- tempdir()
 untar(system.file("extdata",
-                  "sebastes_sam.tar.gz",
+                  "sebastes_bam.tar.gz",
                   package="microhaplot"),
       exdir = sam.path)
 
-
+metadata <- read.delim(file.path(sam.path, "sebastes_metadata.tsv"))
 label.path <- file.path(sam.path, "label.txt")
+build_prep_label_file(metadata, label.path)
 vcf.path <- file.path(sam.path, "sebastes.vcf")
 
 mvShinyHaplot(tempdir())

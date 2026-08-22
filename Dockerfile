@@ -1,13 +1,14 @@
 FROM rocker/r-ver:4.5.0
 
-# samtools: BAM support. perl: hapture.pl. build-essential/gfortran:
-# compiling pcadapt/RSpectra. libclang-dev/curl: microhaplot-extract's Rust
-# build (bindgen, via hts-sys, needs libclang; curl fetches rustup below —
-# see research/rust-htslib-build-requirements.md). The rest: ggiraph's
-# graphics/network dependency chain (svglite/gdtools and friends).
+# build-essential/gfortran: compiling pcadapt/RSpectra. libclang-dev/curl:
+# microhaplot-extract's Rust build (bindgen, via hts-sys, needs libclang;
+# curl fetches rustup below — see
+# research/rust-htslib-build-requirements.md). The rest: ggiraph's graphics/
+# network dependency chain (svglite/gdtools and friends). No perl or
+# samtools any more — microhaplot-extract (below) replaced hapture.pl and
+# its samtools shell-outs entirely (wayfinder ticket #36's cutover); it
+# decodes BAM natively and needs neither.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    perl \
-    samtools \
     build-essential \
     gfortran \
     cmake \
@@ -60,12 +61,9 @@ RUN touch src/main.rs src/lib.rs \
 WORKDIR /
 RUN rm -rf /opt/microhaplot-extract /usr/local/cargo/registry
 
-# Nothing calls this yet — prepHaplotFiles()/prep_validation.R still drive
-# the Perl/samtools pipeline below unchanged (wayfinder ticket #34 is
-# "expand", not "cut over"; that's ticket #36). MICROHAPLOT_EXTRACT_BIN
-# just makes the binary discoverable the same way
-# find_microhaplot_extract_bin() already resolves a local dev build,
-# for whenever something does start calling it.
+# prepHaplotFiles()/prep_validation.R call this binary directly (wayfinder
+# ticket #36's cutover) via find_microhaplot_extract_bin(), which checks
+# this env var first.
 ENV MICROHAPLOT_EXTRACT_BIN=/usr/local/bin/microhaplot-extract
 
 RUN Rscript -e 'install.packages("remotes", repos = "https://cloud.r-project.org")'

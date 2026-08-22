@@ -1,4 +1,8 @@
 samtools_available <- nzchar(Sys.which("samtools"))
+extract_bin_available <- {
+  bin <- find_microhaplot_extract_bin()
+  !is.na(bin) && nzchar(bin) && file.exists(bin)
+}
 
 setup_bam_fixture <- function(samples = c("s6", "s11", "s13"), drop_locus_from_sizes = NULL) {
   sam.dir <- withr::local_tempdir(.local_envir = parent.frame())
@@ -40,6 +44,7 @@ make_tsv <- function(samples, bam_files = paste0(samples, ".bam")) {
 
 test_that("happy path: valid inputs pass with no errors", {
   skip_if_not(samtools_available, "samtools not available")
+  skip_if_not(extract_bin_available, "microhaplot-extract binary not built")
   fx <- setup_bam_fixture()
   res <- validate_prep_inputs(fx$dir, make_tsv(fx$samples), fx$vcf)
 
@@ -50,6 +55,7 @@ test_that("happy path: valid inputs pass with no errors", {
 
 test_that("a gzipped VCF passes validation the same as the plain VCF", {
   skip_if_not(samtools_available, "samtools not available")
+  skip_if_not(extract_bin_available, "microhaplot-extract binary not built")
   skip_if_not(nzchar(Sys.which("gunzip")), "gunzip not available")
   fx <- setup_bam_fixture()
   vcf_gz <- paste0(fx$vcf, ".gz")
@@ -63,6 +69,7 @@ test_that("a gzipped VCF passes validation the same as the plain VCF", {
 
 test_that("missing BAM file referenced in TSV is reported as an error", {
   skip_if_not(samtools_available, "samtools not available")
+  skip_if_not(extract_bin_available, "microhaplot-extract binary not built")
   fx <- setup_bam_fixture()
   tsv <- make_tsv(fx$samples)
   tsv$bam_file[1] <- "does_not_exist.bam"
@@ -75,6 +82,7 @@ test_that("missing BAM file referenced in TSV is reported as an error", {
 
 test_that("truncated BAM file is reported as an error", {
   skip_if_not(samtools_available, "samtools not available")
+  skip_if_not(extract_bin_available, "microhaplot-extract binary not built")
   fx <- setup_bam_fixture()
   bam_path <- file.path(fx$dir, "s6.bam")
   raw <- readBin(bam_path, "raw", n = file.size(bam_path))
@@ -83,11 +91,12 @@ test_that("truncated BAM file is reported as an error", {
   res <- validate_prep_inputs(fx$dir, make_tsv(fx$samples), fx$vcf)
 
   expect_false(res$ok)
-  expect_true(any(grepl("s6.bam", res$errors) & grepl("truncat|corrupt|quickcheck", res$errors, ignore.case = TRUE)))
+  expect_true(any(grepl("s6.bam", res$errors) & grepl("truncat|corrupt", res$errors, ignore.case = TRUE)))
 })
 
 test_that("VCF chromosome missing from BAM references is reported with affected BAM count", {
   skip_if_not(samtools_available, "samtools not available")
+  skip_if_not(extract_bin_available, "microhaplot-extract binary not built")
   fx <- setup_bam_fixture()
   # drop one real VCF locus from every BAM's reference set so it becomes a mismatch
   vcf_loci <- unique(read.table(fx$vcf, stringsAsFactors = FALSE)[[1]])
