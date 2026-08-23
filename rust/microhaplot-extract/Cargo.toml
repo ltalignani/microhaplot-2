@@ -6,7 +6,7 @@
 # checks this at runtime against whatever binary it resolves.
 [package]
 name = "microhaplot-extract"
-version = "2.0.1"
+version = "2.1.0"
 edition = "2021"
 description = "Rust replacement for microhaplot's hapture.pl extraction core (wayfinder map #18)"
 license = "GPL-3.0-or-later"

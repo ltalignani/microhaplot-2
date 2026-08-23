@@ -6,8 +6,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
-^inst/perl/fatlib/*$
-^inst/perl/fatpacker\.trace$
+^CHANGELOG\.md$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$

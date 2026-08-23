@@ -247,7 +247,7 @@ resolve_microhaplot_extract_bin <- function(version = this_microhaplot_version()
 #' binary that predates the R package it's paired with.
 #'
 #' @param bin string. Path to the binary to query.
-#' @return string version (e.g. \code{"2.0.1"}), or \code{NA_character_} if
+#' @return string version (e.g. \code{"2.1.0"}), or \code{NA_character_} if
 #'   the binary couldn't be run or its output didn't look like a version.
 #' @keywords internal
 #' @noRd

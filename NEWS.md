@@ -1,3 +1,21 @@
+# microhaplot 2.1.0
+
+## Changes
+
+* **`prepHaplotFiles()` no longer requires Perl or `samtools`.** Haplotype
+  extraction and BAM validation now go through a bundled companion binary,
+  `microhaplot-extract`, instead of shelling out to `hapture.pl` and
+  `samtools`. Extraction only accepts BAM input now (convert SAM files to
+  BAM first, e.g. with `samtools view -b`); everything else about
+  `prepHaplotFiles()`'s interface is unchanged. On a real, production-scale
+  amplicon panel, extraction ran roughly 12-13x faster than the old Perl
+  pipeline, with output identical down to the byte -- see
+  `research/microhaplot-extract-benchmark.md` for the methodology.
+* The bundled `microhaplot-extract` binary's own version now travels in
+  lockstep with this package's version, and is verified at runtime against
+  whatever binary gets resolved, failing clearly on a mismatch instead of
+  a confusing downstream error.
+
 # microhaplot 2.0.1
 
 ## Fixes
@@ -15,12 +33,6 @@
 
 ## Changes
 
-* **`prepHaplotFiles()` no longer requires Perl or `samtools`.** Haplotype
-  extraction and BAM validation now go through a bundled companion binary,
-  `microhaplot-extract`, instead of shelling out to `hapture.pl` and
-  `samtools`. Extraction only accepts BAM input now (convert SAM files to
-  BAM first, e.g. with `samtools view -b`); everything else about
-  `prepHaplotFiles()`'s interface is unchanged.
 * **The raw data source is gone from Population Genetics.** It was the
   default, and on unfiltered data an individual's two top-ranked haplotypes
   differ by construction — observed heterozygosity came out at 1 almost

@@ -15,9 +15,20 @@
 > outlier detection), a **Field Genotyping Prep** app that wraps the
 > extraction behind a guided wizard, **BAM input** support, and a **Docker**
 > distribution that requires no local R installation.
+>
+> **As of v2.1.0, this microhaplot 2 fork drops Perl entirely.** Extraction and BAM validation used
+> to shell out to a fatpacked `hapture.pl` script and `samtools`; both are
+> gone, replaced by [`microhaplot-extract`](#the-microhaplot-extract-binary),
+> a small companion binary written in Rust. Nothing to install beyond the
+> package itself (or nothing at all, under Docker) — and on a real,
+> production-scale amplicon panel, extraction ran **roughly 12-13x
+> faster**, with output identical to the old Perl pipeline down to the
+> byte. See [`CHANGELOG.md`](CHANGELOG.md) and
+> [`research/microhaplot-extract-benchmark.md`](research/microhaplot-extract-benchmark.md)
+> for the methodology and numbers behind that figure.
 
 `microhaplot` generates visual summaries of microhaplotypes found in
-short read alignments. All you need are alignment SAM or BAM files and a
+short read alignments. All you need are alignment BAM files and a
 variant call VCF file. (The latter tells `microhaplot` which SNPs to
 include into microhaplotypes). It was designed for extracting and
 visualized haplotypes from high-quality amplicon sequencing data. We
@@ -30,8 +41,8 @@ There are two key steps in the `microhaplot` workflow:
 
 1.  **Extraction.** Alignment and variant (SNP) data are summarized into
     a single data frame. You supply a VCF file listing the variants you
-    want to extract, and as many SAM or BAM files (one per individual)
-    as you want to extract read information from. CIGAR strings in the
+    want to extract, and as many BAM files (one per individual) as you
+    want to extract read information from. CIGAR strings in the
     alignment files are parsed to pull the variant information out of
     each read. Depending on the size of the data set, this can take a
     few minutes.
@@ -120,13 +131,14 @@ docker compose down
 
 Your data stays in `./microhaplot-data` between runs.
 
-### A note for Windows and BAM files
+### A note for Windows
 
-Called directly from R on Windows, `prepHaplotFiles` doesn't support BAM
-input (only SAM). Running through Docker sidesteps this entirely: the
-container is always Linux inside, regardless of your host OS, so BAM
-input works the same way on Windows-via-Docker as it does on Mac or
-Linux.
+`microhaplot-extract` (see [below](#the-microhaplot-extract-binary)) has
+no native Windows build, so `prepHaplotFiles` called directly from R
+doesn't work on Windows at all. Running through Docker sidesteps this
+entirely: the container is always Linux inside, regardless of your host
+OS, so extraction works the same way on Windows-via-Docker as it does on
+Mac or Linux.
 
 ### A full walkthrough
 
@@ -219,28 +231,18 @@ microhaplot::mvShinyHaplot("~/Shiny")
 ### Extract and visualize
 
 First create a tab-separated **label** file with 3 columns, in this
-order: SAM or BAM file name, individual ID, and group label. Use `NA` if
-you don't want to assign a group. Keeping all your alignment files in one
-directory makes this easier.
+order: BAM file name, individual ID, and group label. Use `NA` if you
+don't want to assign a group. Keeping all your alignment files in one
+directory makes this easier. BAM files don't need a `.bai` index.
 
 The `label` file looks like this:
 
 ``` txt
-s6.sam  s6      copper
-s11.sam s11     copper
-s13.sam s13     gold
-s14.sam s14     kelp
-s18.sam s18     gold
-```
-
-SAM and BAM files can be freely mixed in the same label file — each row's
-file extension (`.sam` or `.bam`, case-insensitive) decides how it's
-read. BAM files don't need a `.bai` index:
-
-``` txt
 s6.bam  s6      copper
-s11.sam s11     copper
+s11.bam s11     copper
 s13.bam s13     gold
+s14.bam s14     kelp
+s18.bam s18     gold
 ```
 
 Then run `prepHaplotFiles`, giving it a run label, the directory holding
@@ -255,11 +257,13 @@ run.label <- "sebastes"
 
 sam.path <- tempdir()
 untar(system.file("extdata",
-                  "sebastes_sam.tar.gz",
+                  "sebastes_bam.tar.gz",
                   package="microhaplot"),
       exdir = sam.path)
 
+metadata <- read.delim(file.path(sam.path, "sebastes_metadata.tsv"))
 label.path <- file.path(sam.path, "label.txt")
+build_prep_label_file(metadata, label.path)
 vcf.path <- file.path(sam.path, "sebastes.vcf")
 out.path <- tempdir()
 app.path <- "~/Shiny/microhaplot"
