@@ -1,6 +1,12 @@
+# NOTE: `version` must always equal the R package's own DESCRIPTION `Version:`
+# exactly (wayfinder ticket #38's decision, implemented in #40) -- bump both
+# together by hand at release time. release-binaries.yml's "Confirm
+# Cargo.toml's version matches DESCRIPTION's Version" step fails the build if
+# they diverge, and R/microhaplot_extract_binary.R's resolve_bin_or_stop()
+# checks this at runtime against whatever binary it resolves.
 [package]
 name = "microhaplot-extract"
-version = "0.1.0"
+version = "2.0.1"
 edition = "2021"
 description = "Rust replacement for microhaplot's hapture.pl extraction core (wayfinder map #18)"
 license = "GPL-3.0-or-later"

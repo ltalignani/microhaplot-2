@@ -1,3 +1,18 @@
+test_that("this_microhaplot_version() prefers the MICROHAPLOT_EXPECTED_VERSION env var", {
+  withr::local_envvar(MICROHAPLOT_EXPECTED_VERSION = "9.9.9")
+  expect_equal(this_microhaplot_version(), "9.9.9")
+})
+
+test_that("this_microhaplot_version() falls back to a DESCRIPTION at the working directory", {
+  withr::local_envvar(MICROHAPLOT_EXPECTED_VERSION = NA)
+  work_dir <- withr::local_tempdir()
+  desc_path <- file.path(work_dir, "DESCRIPTION")
+  writeLines(c("Package: fake", "Version: 8.8.8"), desc_path)
+  withr::local_dir(work_dir)
+
+  expect_equal(this_microhaplot_version(), "8.8.8")
+})
+
 test_that("detect_microhaplot_extract_platform() maps known platforms correctly", {
   expect_equal(
     detect_microhaplot_extract_platform(sysname = "Darwin", arch = "aarch64", os_type = "unix"),
@@ -163,12 +178,60 @@ test_that("resolve_microhaplot_extract_bin() reports a clear error on a non-zero
 test_that("resolve_bin_or_stop() returns an explicit bin.path unchanged", {
   dev_bin <- withr::local_tempfile()
   writeLines("#!/bin/sh", dev_bin)
-  expect_equal(resolve_bin_or_stop(dev_bin), dev_bin)
+  result <- resolve_bin_or_stop(
+    dev_bin,
+    version_check_fn = function(bin) "9.9.9",
+    expected_version = "9.9.9"
+  )
+  expect_equal(result, dev_bin)
 })
 
 test_that("resolve_bin_or_stop() errors clearly when an explicit bin.path doesn't exist", {
   expect_error(
     resolve_bin_or_stop(file.path(withr::local_tempdir(), "no-such-binary")),
     "microhaplot-extract binary not found"
+  )
+})
+
+test_that("resolve_bin_or_stop() passes silently when an auto-resolved binary's version matches", {
+  dev_bin <- withr::local_tempfile()
+  writeLines("#!/bin/sh", dev_bin)
+
+  result <- resolve_bin_or_stop(
+    NULL,
+    resolve_fn = function() dev_bin,
+    version_check_fn = function(bin) "2.0.1",
+    expected_version = "2.0.1"
+  )
+
+  expect_equal(result, dev_bin)
+})
+
+test_that("resolve_bin_or_stop() stops with a rebuild message on a dev-build version mismatch", {
+  dev_bin <- withr::local_tempfile()
+  writeLines("#!/bin/sh", dev_bin)
+
+  expect_error(
+    resolve_bin_or_stop(
+      NULL,
+      resolve_fn = function() dev_bin,
+      version_check_fn = function(bin) "0.1.0",
+      expected_version = "2.0.1"
+    ),
+    "version mismatch.*rebuild it with `cargo build --release`"
+  )
+})
+
+test_that("resolve_bin_or_stop() stops with a bin.path-specific message on an explicit-path version mismatch", {
+  dev_bin <- withr::local_tempfile()
+  writeLines("#!/bin/sh", dev_bin)
+
+  expect_error(
+    resolve_bin_or_stop(
+      dev_bin,
+      version_check_fn = function(bin) "0.1.0",
+      expected_version = "2.0.1"
+    ),
+    "version mismatch.*Pass a matching binary via bin\\.path"
   )
 })

@@ -109,6 +109,21 @@ jobs:
             exit 1
           fi
 
+      # Same discipline, extended to the crate's own version (wayfinder
+      # ticket #38's decision): resolve_bin_or_stop() (R/microhaplot_extract_
+      # binary.R) checks a resolved binary's --version against DESCRIPTION's
+      # Version at runtime, so a binary built from a Cargo.toml that drifted
+      # from DESCRIPTION would fail that check for every user -- catch the
+      # drift here instead, before it's published.
+      - name: Confirm Cargo.toml's version matches DESCRIPTION's Version
+        run: |
+          cargo_version=$(sed -n 's/^version = "\(.*\)"/\1/p' rust/microhaplot-extract/Cargo.toml | head -n1)
+          desc_version=$(sed -n 's/^Version: *//p' DESCRIPTION)
+          if [ "$cargo_version" != "$desc_version" ]; then
+            echo "::error::rust/microhaplot-extract/Cargo.toml's version ($cargo_version) does not match DESCRIPTION's Version: $desc_version"
+            exit 1
+          fi
+
       - name: Make binaries executable
         run: chmod +x dist/*
 

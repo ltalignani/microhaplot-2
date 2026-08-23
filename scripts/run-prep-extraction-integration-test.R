@@ -24,6 +24,16 @@ source("R/microhaplot_extract_binary.R")
 source("R/run_microhaplot_extract.R")
 source("R/runHaplot.R")
 
+# this_microhaplot_version() (wayfinder ticket #38's version-check
+# handshake, implemented in #40) falls back to a DESCRIPTION found at the
+# working directory when the package isn't actually installed under this
+# name -- but test_file() below changes the working directory to
+# tests/testthat/ for the duration of the run, so that fallback would miss
+# it. Capture the version here instead, while the working directory is
+# still the repo root this script's own convention (above) requires.
+desc_version <- read.dcf("DESCRIPTION", fields = "Version")[1, "Version"]
+Sys.setenv(MICROHAPLOT_EXPECTED_VERSION = desc_version)
+
 result <- test_file("tests/testthat/test-prep-extraction-integration.R")
 summary <- as.data.frame(result)
 if (any(summary$failed > 0) || any(summary$error)) {
